@@ -70,7 +70,8 @@ class MultiArchAPIClient:
             self.status.msg["message"] = main_response["message"]
             self.status.msg["data"] = main_response["data"]
             return self.status.msg
-        else: #healthys
+        else: #healthy
+            def_response_list["data"] = {}
             def_response_list["data"][self.main_name] = main_response
             #Include messages from fleet
             for name in fleet:
@@ -93,6 +94,7 @@ class MultiArchAPIClient:
 
         #Initialize with main response
         config_status_list = {}
+        config_status_list["data"] = {}
         config_status_list["data"][self.main_name] = self.main_api.configuration_status()
 
         for name in fleet:
@@ -234,12 +236,12 @@ class MultiArchAPIClient:
 
         #Create response message
         set_config_list = {}
-        set_config_list["data"] = self.id_list[fleet_name]["data"]
-        set_config_list["data"][self.main_name] = main_response
+        set_config_list["data"] = self.id_list[fleet_name]
+        print("debug_checkpoint")
 
         self.status.msg["status"] = "ok"
         self.status.msg["message"] = {}
-        self.status.msg["data"] = set_config_list["data"]
+        self.status.msg["data"] = set_config_list
         return self.status.msg
 
 
@@ -266,16 +268,17 @@ class MultiArchAPIClient:
                 #Include messages from fleet
                 id_list = self.id_list[fleet_name]["data"]
                 for name in fleet:
-                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(id_list[name]["job_id"]))["data"]
+                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(id_list[name]["job_id"]))
+                    monitor_list["data"][name] = monitor_list["data"][name]["data"]
 
                 #msg
-                monitor_list = {}
-                monitor_list["data"] = monitor_list["data"]
-                monitor_list["data"][self.main_name] = main_response
+                monitor_id_list = {}
+                monitor_id_list["data"] = monitor_list["data"]
+                monitor_id_list["data"][self.main_name] = main_response
 
                 self.status.msg["status"] = "ok"
                 self.status.msg["message"] = {}
-                self.status.msg["data"] = monitor_list["data"]
+                self.status.msg["data"] = monitor_id_list["data"]
                 return self.status.msg
             else: #false id
                 self.status.msg["status"] = "error"
