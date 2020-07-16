@@ -15,12 +15,12 @@ class ApiMessage:
         self.msg["status"] = new_status
 
     #Call as error message
-    def error(self, status="error", msg=None, data=None):
-        self.err = {}
-        self.err["status"] = status
-        self.err["message"] = msg
-        self.err["data"] = data #should be empty upon error (see Design Document)
-        return self.err
+    #def error(self, status="error", msg=None, data=None):
+    #    self.err = {}
+    #    self.err["status"] = status
+    #    self.err["message"] = msg
+    #    self.err["data"] = data #should be empty upon error (see Design Document)
+    #    return self.err
 
     def __str__(self):
         return self.msg

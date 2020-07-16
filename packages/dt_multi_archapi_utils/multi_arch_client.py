@@ -61,17 +61,29 @@ class MultiArchAPIClient:
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
         #Initialize with main response
-        empty = {}
-        def_response_list = self.main_api.default_response()
+        def_response_list = {}
+        main_response = self.main_api.default_response()
 
-        if def_response_list["data"] is empty: #error
-            return def_response_list
-        else: #healthy
-            def_response_list["data"] = {}
-            #Replace with messages from fleet
+        if main_response["status"] == "error": #error for main robot
+            #error msg
+            self.status.msg["status"] = main_response["status"]
+            self.status.msg["message"] = main_response["message"]
+            self.status.msg["data"] = main_response["data"]
+            return self.status.msg
+        else: #healthys
+            def_response_list["data"][self.main_name] = main_response
+            #Include messages from fleet
             for name in fleet:
                 def_response_list["data"][name] = self.work.http_get_request(device=name, endpoint='/')
-            return def_response_list
+                if def_response_list["data"][name]["status"] == "error":
+                    self.status.msg["status"] = "error"
+                    self.status.msg["message"] = "A fleet device encountered an error"
+                else:
+                    self.status.msg["status"] = "ok"
+                    self.status.msg["message"] = {}
+            #msg
+            self.status.msg["data"] = def_response_list["data"]
+            return self.status.msg
 
 
     def configuration_status(self, fleet):
@@ -81,11 +93,15 @@ class MultiArchAPIClient:
 
         #Initialize with main response
         config_status_list = {}
-        config_status_list = self.main_api.configuration_status()
+        config_status_list["data"][self.main_name] = self.main_api.configuration_status()
 
         for name in fleet:
             config_status_list["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/status')
-        return config_status_list
+        #msg
+        self.status.msg["status"] = "ok"
+        self.status.msg["message"] = {}
+        self.status.msg["data"] = config_status_list["data"]
+        return self.status.msg
 
 
     """
@@ -152,10 +168,13 @@ class MultiArchAPIClient:
 
         #Initialize with main response
         config_info_list = self.main_api.configuration_info(config)
-        if self.status.msg["status"] == "error":
+        if config_info_list["status"] == "error": #error msg
             #Do not proceed with messages from fleet
-            return {}
-        else:
+            self.status.msg["status"] = config_info_list["status"]
+            self.status.msg["message"] = config_info_list["message"]
+            self.status.msg["data"] = config_info_list["data"]
+            return self.status.msg
+        else: #healthy
             try:
                 with open(self.config_path + "/" + config + ".yaml", 'r') as file: #"/data/assets/dt-architecture-data/configurations/town/"
                     device_info = yaml.load(file, Loader=yaml.FullLoader)
@@ -172,16 +191,18 @@ class MultiArchAPIClient:
                                     device_info["devices"][device]["configuration"][c_name] = {}
                                     device_info["devices"][device]["configuration"][c_name] = new_robot_type_as_device.configuration_info(config=c_name)
 
-                        config_info_list["devices"] = device_info["devices"]
-
-                    return config_info_list
+                        config_info_list["data"]["devices"] = device_info["devices"]
+                        #msg
+                        self.status.msg["status"] = config_info_list["status"]
+                        self.status.msg["message"] = config_info_list["message"]
+                        self.status.msg["data"] = config_info_list["data"]
+                    return self.status.msg
 
             except FileNotFoundError: #error msg
                 self.status.msg["status"] = "error"
                 self.status.msg["message"] = "Configuration file not found in " + self.config_path + "/" + config + ".yaml"
                 self.status.msg["data"] = {}
-                return {}
-                #print(self.status.error(status="error", msg="Configuration file not found in " + self.config_path + "/" + config + ".yaml"))
+                return self.status.msg
 
 
     def configuration_set_config(self, config, fleet):
@@ -197,18 +218,29 @@ class MultiArchAPIClient:
             if cl_list[name]["status"] == "busy":
                 nogo[name] = cl_list[name]
         if nogo != {}:
-            return nogo
+            self.status.msg["status"] = "error"
+            self.status.msg["message"] = "One or more fleet devices are still busy with another process, cannot proceed"
+            self.status.msg["data"] = cl_list
+            return self.status.msg
 
         #Initialize with main response
-        main_set_config = self.main_api.configuration_set_config(config)
-        #Create list
-        self.id_list[fleet_name] = main_set_config
+        main_response = self.main_api.configuration_set_config(config)
+        #Create list for logging
+        self.id_list[fleet_name] = main_response
         print(self.id_list)
         self.id_list[fleet_name]["data"] = {}
-        #Include messages from fleet
         for name in fleet:
             self.id_list[fleet_name]["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/set/' + config)
-        return self.id_list[fleet_name]
+
+        #Create response message
+        set_config_list = {}
+        set_config_list["data"] = self.id_list[fleet_name]["data"]
+        set_config_list["data"][self.main_name] = main_response
+
+        self.status.msg["status"] = "ok"
+        self.status.msg["message"] = {}
+        self.status.msg["data"] = set_config_list["data"]
+        return self.status.msg
 
 
     def monitor_id(self, id, fleet):
@@ -218,33 +250,43 @@ class MultiArchAPIClient:
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
         #Initialize with main response
-        monitor_id = self.main_api.monitor_id(id)
+        main_response = self.main_api.monitor_id(id)
 
 
-        #This is only required outside of Dashboard, as Dashboard automatically uses most recent id
+        #This is only required outside of Dashboard, as Dashboard automatically uses most recent id (coupled with 'set' requests)
+        #Clean up self.id_list working after integration in Dashboard
         ########################################################################################################
         #Is there a process going on?
         if fleet_name in self.id_list:
             #Check if id is a match with most recent process on main device
             if int(self.id_list[fleet_name]['job_id']) == int(id):
                 #Initialize list
-                monitor_list = monitor_id
+                monitor_list = main_response
                 monitor_list["data"] = {}
                 #Include messages from fleet
                 id_list = self.id_list[fleet_name]["data"]
                 for name in fleet:
-                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(id_list[name]["job_id"]))
-                return monitor_list
+                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(id_list[name]["job_id"]))["data"]
+
+                #msg
+                monitor_list = {}
+                monitor_list["data"] = monitor_list["data"]
+                monitor_list["data"][self.main_name] = main_response
+
+                self.status.msg["status"] = "ok"
+                self.status.msg["message"] = {}
+                self.status.msg["data"] = monitor_list["data"]
+                return self.status.msg
             else: #false id
                 self.status.msg["status"] = "error"
-                self.status.msg["message"] = "The specified id does not match most recent process for fleet " + fleet_name
+                self.status.msg["message"] = "The specified id " + str(id) + " does not match most recent process for fleet " + fleet_name
                 self.status.msg["data"] = {}
-                return {}
+                return self.status.msg
         else: #no process
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "There is no process for fleet " + fleet_name
             self.status.msg["data"] = {}
-            return {}
+            return self.status.msg
         ########################################################################################################
 
 
@@ -258,7 +300,10 @@ class MultiArchAPIClient:
         try:
             with open(self.cl_fleet.fleet_path + fleet_name + ".yaml", 'r') as file: #replace with data/config/fleets/...
                 info_fleet = yaml.load(file, Loader=yaml.FullLoader)
-                return info_fleet
+                self.status.msg["status"] = "ok"
+                self.status.msg["message"] = {}
+                self.status.msg["data"] = info_fleet
+                return self.status.msg
         except FileNotFoundError: #error msg
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "Fleet file not found in /data/assets/.../lists/" + fleet_name + ".yaml" #replace with data/config/fleets/...

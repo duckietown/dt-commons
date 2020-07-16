@@ -94,9 +94,13 @@ class ApiWorker:
 
     def container_status(self):
         #similar to Docker ps command
-        c = {}
-        c = self.client.containers.list(all=True)
-        return c
+        list = {}
+        #self.client.container.reload()
+        #c = self.client.containers.list(all=True)
+        #for container in c:
+        #    for attr in {"attrs", "id", "image", "labels", "name", "short_id", "status"}:
+        #        list[container][attr] = self.client.container.attr
+        return list
 
 
 

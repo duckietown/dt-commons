@@ -77,26 +77,32 @@ class ArchAPIClient:
         return self.status.msg
 
     def configuration_status(self):
-        #currently same as default_response
-        #return self.status.msg
         config_status = {}
         config_status = self.work.container_status()
-        return config_status
-
-
+        #todo: include error msg upon unhealthy/bad container status
+        #msg
+        self.status.msg["status"] = "ok"
+        self.status.msg["message"] = {}
+        self.status.msg["data"] = config_status
+        return self.status.msg
+        
 
     def configuration_list(self):
         config_list = {} #re-initialize every time called for (empty when error)
         if self.config_path is not None:
             config_paths = glob.glob(self.config_path + "/*.yaml")
             config_list["configurations"] = [os.path.splitext(os.path.basename(f))[0] for f in config_paths]
+            #msg
+            self.status.msg["status"] = "ok"
+            self.status.msg["message"] = {}
+            self.status.msg["data"] = config_list
         else: #error msg
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "could not find configurations for " + self.robot_type + " in dt-architecture-data"
             self.status.msg["data"] = {}
-            return {}
+            return self.status.msg
 
-        return config_list
+        return self.status.msg
 
 
     def configuration_info(self, config):
@@ -108,7 +114,7 @@ class ArchAPIClient:
                     for m in mods:
                         if "type" in mods[m]:
                             mod_type = mods[m]["type"]
-                            mod_config = self.module_info(mod_type)
+                            mod_config = self.module_info(mod_type)["data"]
                             if "configuration" in mod_config:
                                 #Virtually append module configuration info to configuration file
                                 config_info["modules"][m]["configuration"] = mod_config["configuration"]
@@ -117,13 +123,17 @@ class ArchAPIClient:
                                     #fully compatible with Docker SDK for Python client.containers.run()
                                     if other in mods[m]:
                                         config_info["modules"][m]["configuration"][other] = mods[m][other]
-                return config_info
+                #msg
+                self.status.msg["status"] = "ok"
+                self.status.msg["message"] = {}
+                self.status.msg["data"] = config_info
+                return self.status.msg
 
         except FileNotFoundError: #error msg
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "Configuration file not found in " + self.config_path + "/" + config + ".yaml"
             self.status.msg["data"] = {}
-            return {}
+            return self.status.msg
 
 
     def module_list(self):
@@ -143,10 +153,14 @@ class ArchAPIClient:
                 self.status.msg["status"] = "error"
                 self.status.msg["message"] = "Modules not found in " + self.module_path + file + ".yaml"
                 self.status.msg["data"] = {}
-                return {}
+                return self.status.msg
                 #return self.status.error(status="error", msg="Module file not found", data=self.module_path + "/" + file + ".yaml")
 
-        return mod_list
+        #msg
+        self.status.msg["status"] = "ok"
+        self.status.msg["message"] = {}
+        self.status.msg["data"] = mod_list
+        return self.status.msg
 
 
     def module_info(self, module):
@@ -182,32 +196,63 @@ class ArchAPIClient:
                 if "image" in config:
                     config["image"] = config["image"].replace('${ARCH-arm32v7}','arm32v7' )
 
-                return mod_info
+                #msg
+                self.status.msg["status"] = "ok"
+                self.status.msg["message"] = {}
+                self.status.msg["data"] = mod_info
+                return self.status.msg
 
         except FileNotFoundError: #error msg
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "Module file not found in " + self.module_path + module + ".yaml"
             self.status.msg["data"] = {}
-            return {}
+            return self.status.msg
             #return self.status.error(status="error", msg="Module not found", data=self.module_path + module + ".yaml")
 
 
 #ACTIVE MESSAGING: activation (pull, stop, ...) requests requiring a DockerClient()
     def configuration_set_config(self, config):
         #Get virtually extended config file with module specs
-        mod_config = self.configuration_info(config)
-        return self.work.set_config(mod_config) #removed str
+        mod_config = self.configuration_info(config)["data"]
+        #msg
+        if self.work.set_config(mod_config)["status"] != "busy":
+            self.status.msg["status"] = "ok"
+            self.status.msg["message"] = {}
+            self.status.msg["data"] = self.work.set_config(mod_config)
+        else:
+            self.status.msg["status"] = "error"
+            self.status.msg["message"] = "The device is still busy with process " + str(self.work.set_config(mod_config)["job_id"])
+            self.status.msg["data"] = {}
+        return self.status.msg
+
 
     def pull_image(self, url):
         #url of form {image_url}:{image_tag}
-        return self.work.pull_image(url)
+        #msg
+        if self.work.pull_image(url)["status"] != "busy":
+            self.status.msg["status"] = "ok"
+            self.status.msg["message"] = {}
+            self.status.msg["data"] = self.work.pull_image(url)
+        else:
+            self.status.msg["status"] = "error"
+            self.status.msg["message"] = "The device is still busy with process " + str(self.work.pull_image(url)["job_id"])
+            self.status.msg["data"] = {}
+        return self.status.msg
+
 
     def monitor_id(self, id):
         #Get current job status, using id=ETag
         if int(id) in self.work.log:
-            return self.work.log[int(id)]
+            #msg
+            self.status.msg["status"] = "ok"
+            self.status.msg["message"] = {}
+            self.status.msg["data"] = self.work.log[int(id)]
         else:
-            return self.work.log.copy()
+            #msg
+            self.status.msg["status"] = "ok"
+            self.status.msg["message"] = self.work.log.copy()
+            self.status.msg["data"] = {}
+        return self.status.msg
 
     def clear_job_log(self):
         return self.work.clear_log()
