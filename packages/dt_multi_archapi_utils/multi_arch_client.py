@@ -232,12 +232,13 @@ class MultiArchAPIClient:
         print(self.id_list)
         self.id_list[fleet_name]["data"] = {}
         for name in fleet:
-            self.id_list[fleet_name]["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/set/' + config)
+            self.id_list[fleet_name]["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/set/' + config)["data"]
 
         #Create response message
-        set_config_list = {}
-        set_config_list["data"] = self.id_list[fleet_name]
+        set_config_list = main_response["data"]
+        set_config_list["data"] = self.id_list[fleet_name]["data"]
         print("debug_checkpoint")
+        print(self.id_list)
 
         self.status.msg["status"] = "ok"
         self.status.msg["message"] = {}
@@ -254,14 +255,14 @@ class MultiArchAPIClient:
         #Initialize with main response
         main_response = self.main_api.monitor_id(id)
 
-
         #This is only required outside of Dashboard, as Dashboard automatically uses most recent id (coupled with 'set' requests)
         #Clean up self.id_list working after integration in Dashboard
         ########################################################################################################
         #Is there a process going on?
         if fleet_name in self.id_list:
             #Check if id is a match with most recent process on main device
-            if int(self.id_list[fleet_name]['job_id']) == int(id):
+            log_id = self.id_list[fleet_name]["job_id"]
+            if int(log_id) == int(id):
                 #Initialize list
                 monitor_list = main_response
                 monitor_list["data"] = {}
