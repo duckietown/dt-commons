@@ -341,7 +341,7 @@ class ArchAPIClient:
                 image = "duckietown/{}".format(image)
             image_data = self.client.images.get(image)
             labels = image_data.labels
-            sha = image_data.id
+            sha = image_data.attrs["RepoDigests"][0].split("@")[1]
             data = {}        
             data["image"] = image
             data["sha"] = sha
