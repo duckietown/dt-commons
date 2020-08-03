@@ -262,7 +262,7 @@ class ArchAPIClient:
         return self.work.clearance()
 
     def get_image_info(self, image):
-        '''get public info with anchestry from Docker Hub
+        '''get public info with ancestry from Docker Hub
 
         Parameters:
         image(str): name for docker image
@@ -337,6 +337,8 @@ class ArchAPIClient:
             return "{}:{}".format(image_name, tag if tag else "latest")
 
         try:
+            if "/" not in image:
+                image = "duckietown/{}".format(image)
             image_data = self.client.images.get(image)
             labels = image_data.labels
             sha = image_data.id
@@ -344,20 +346,20 @@ class ArchAPIClient:
             data["image"] = image
             data["sha"] = sha
             data["Labels"] = labels
-            anchestry = []
+            ancestry = []
             base_image_name = get_image_from_labels(labels)
             while base_image_name:
                 if "ubuntu" in base_image_name:
-                    anchestry.append(base_image_name)
+                    ancestry.append(base_image_name)
                     break
-                anchestry.append(base_image_name)
+                ancestry.append(base_image_name)
                 base_image_name, base_tag = base_image_name.split(':', 1)
                 base_image_config = get_config(base_image_name, base_tag)
                 labels = base_image_config["Labels"]
                 base_image_name = get_image_from_labels(labels)
                 
 
-            data["anchestry"] = anchestry
+            data["ancestry"] = ancestry
             message = {
                         "status": "ok",
                         "message": None,
