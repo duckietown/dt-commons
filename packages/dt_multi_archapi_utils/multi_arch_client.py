@@ -336,7 +336,9 @@ class MultiArchAPIClient:
             cl_list[name] = self.work.http_get_request(device=name, endpoint='/clearance')
         return cl_list
 
-
+    def fleet_scan(self):
+        fleet_list = []
+        return fleet_list
 
 """
     def something(self):
