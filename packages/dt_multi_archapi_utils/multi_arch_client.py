@@ -336,9 +336,18 @@ class MultiArchAPIClient:
             cl_list[name] = self.work.http_get_request(device=name, endpoint='/clearance')
         return cl_list
 
-    def fleet_scan(self):
-        fleet_list = []
-        return fleet_list
+    def fleet_scan(self, list_of_files):
+        unique_devices = []
+        for file_yaml in list_of_files:
+            try:
+                with open(file_yaml, 'r') as file:
+                    data_from_file = yaml.load(file)
+                    for device in data_from_file['devices']:
+                        if device not in unique_devices:
+                            unique_devices.append(device)
+            except FileNotFoundError:
+                return 'The file not exists'
+        return unique_devices
 
 """
     def something(self):
