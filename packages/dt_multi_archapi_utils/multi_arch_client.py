@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#This script is part of the DT Architecture Library for dt-commons
+# This script is part of the DT Architecture Library for dt-commons
 
 import yaml
 import docker
@@ -13,7 +13,7 @@ from .multi_arch_worker import MultiApiWorker
 from .clean_fleet import CleanFleet
 from .listener import FleetScanner
 
-#Import from another folder within dt-commons (no base image)
+# Import from another folder within dt-commons (no base image)
 from dt_archapi_utils.arch_client import ArchAPIClient
 from dt_archapi_utils.arch_message import ApiMessage
 
@@ -25,55 +25,55 @@ from dt_archapi_utils.arch_message import ApiMessage
     NOT RUNNING WITHIN THE LIBRARY.
 '''
 
+
 class MultiArchAPIClient:
-    def __init__(self, client=None, port="8083"): #fleet as yaml file without .yaml
+    def __init__(self, client=None, port="8083"):  # fleet as yaml file without .yaml
         self.client = client
         self.port = port
 
-        #Initialize folders and classes
+        # Initialize folders and classes
         self.current_configuration = "none"
         self.dt_version = "ente"
         self.status = ApiMessage()
         self.cl_fleet = CleanFleet()
         self.scan = FleetScanner()
 
-        #Define robot_type
+        # Define robot_type
         self.robot_type = "none"
         if os.path.isfile("/data/config/robot_type"):
             self.robot_type = open("/data/config/robot_type").readline()
         elif os.path.isfile("/data/stats/init_sd_card/parameters/robot_type"):
             self.robot_type = open("/data/stats/init_sd_card/parameters/robot_type").readline()
-        else: #error upon initialization
+        else:  # error upon initialization
             self.status("error", "Could not find robot type in expected paths", None)
 
-        #Give main robot an ArchAPIClient
+        # Give main robot an ArchAPIClient
         self.main_name = os.environ['VEHICLE_NAME']
         self.main_api = ArchAPIClient(hostname=self.main_name, robot_type=self.robot_type, client=self.client)
         self.config_path = self.main_api.config_path
         self.module_path = self.main_api.module_path
-        self.id_list = dict() #store process log - replace with multiprocessing.Manager()?
+        self.id_list = dict()  # store process log - replace with multiprocessing.Manager()?
 
-
-    #RESPONSE MESSAGES: extended with device info from fleet file
+    # RESPONSE MESSAGES: extended with device info from fleet file
     def default_response(self, fleet):
-        #Initialize worker with fleet and port
+        # Initialize worker with fleet and port
         fleet = self.cl_fleet.clean_list(fleet)
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Initialize with main response
+        # Initialize with main response
         def_response_list = {}
         main_response = self.main_api.default_response()
 
-        if main_response["status"] == "error": #error for main robot
-            #error msg
+        if main_response["status"] == "error":  # error for main robot
+            # error msg
             self.status.msg["status"] = main_response["status"]
             self.status.msg["message"] = main_response["message"]
             self.status.msg["data"] = main_response["data"]
             return self.status.msg
-        else: #healthy
+        else:  # healthy
             def_response_list["data"] = {}
             def_response_list["data"][self.main_name] = main_response
-            #Include messages from fleet
+            # Include messages from fleet
             for name in fleet:
                 def_response_list["data"][name] = self.work.http_get_request(device=name, endpoint='/')
                 if def_response_list["data"][name]["status"] == "error":
@@ -82,29 +82,27 @@ class MultiArchAPIClient:
                 else:
                     self.status.msg["status"] = "ok"
                     self.status.msg["message"] = {}
-            #msg
+            # msg
             self.status.msg["data"] = def_response_list["data"]
             return self.status.msg
 
-
     def configuration_status(self, fleet):
-        #Initialize worker with fleet and port
+        # Initialize worker with fleet and port
         fleet = self.cl_fleet.clean_list(fleet)
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Initialize with main response
+        # Initialize with main response
         config_status_list = {}
         config_status_list["data"] = {}
         config_status_list["data"][self.main_name] = self.main_api.configuration_status()
 
         for name in fleet:
             config_status_list["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/status')
-        #msg
+        # msg
         self.status.msg["status"] = "ok"
         self.status.msg["message"] = {}
         self.status.msg["data"] = config_status_list["data"]
         return self.status.msg
-
 
     """
     def configuration_list(self, fleet):
@@ -164,56 +162,58 @@ class MultiArchAPIClient:
     """
 
     def configuration_info(self, config):
-        #Initialize worker with fleet and port
-        #fleet = self.cl_fleet.clean_list(fleet)
-        #self.work = MultiApiWorker(fleet=fleet, port=self.port)
+        # Initialize worker with fleet and port
+        # fleet = self.cl_fleet.clean_list(fleet)
+        # self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Initialize with main response
+        # Initialize with main response
         config_info_list = self.main_api.configuration_info(config)
-        if config_info_list["status"] == "error": #error msg
-            #Do not proceed with messages from fleet
+        if config_info_list["status"] == "error":  # error msg
+            # Do not proceed with messages from fleet
             self.status.msg["status"] = config_info_list["status"]
             self.status.msg["message"] = config_info_list["message"]
             self.status.msg["data"] = config_info_list["data"]
             return self.status.msg
-        else: #healthy
+        else:  # healthy
             try:
-                with open(self.config_path + "/" + config + ".yaml", 'r') as file: #"/data/assets/dt-architecture-data/configurations/town/"
+                with open(self.config_path + "/" + config + ".yaml",
+                          'r') as file:  # "/data/assets/dt-architecture-data/configurations/town/"
                     device_info = yaml.load(file, Loader=yaml.FullLoader)
-                    #print(device_info)
-                    #print("devices" in device_info)
+                    # print(device_info)
+                    # print("devices" in device_info)
                     if "devices" in device_info:
                         for device in device_info["devices"]:
                             if "configuration" in device_info["devices"][device]:
-                                c_name = device_info["devices"][device]["configuration"] #save config name
+                                c_name = device_info["devices"][device]["configuration"]  # save config name
                                 if c_name is not {}:
-                                    device_info["devices"][device]["configuration"] = {} #initialize for config info
-                                    #dt-architecture-data configurations depend on robot_type
+                                    device_info["devices"][device]["configuration"] = {}  # initialize for config info
+                                    # dt-architecture-data configurations depend on robot_type
                                     new_robot_type_as_device = ArchAPIClient(robot_type=device)
                                     device_info["devices"][device]["configuration"][c_name] = {}
-                                    device_info["devices"][device]["configuration"][c_name] = new_robot_type_as_device.configuration_info(config=c_name)
+                                    device_info["devices"][device]["configuration"][
+                                        c_name] = new_robot_type_as_device.configuration_info(config=c_name)
 
                         config_info_list["data"]["devices"] = device_info["devices"]
-                        #msg
+                        # msg
                         self.status.msg["status"] = config_info_list["status"]
                         self.status.msg["message"] = config_info_list["message"]
                         self.status.msg["data"] = config_info_list["data"]
                     return self.status.msg
 
-            except FileNotFoundError: #error msg
+            except FileNotFoundError:  # error msg
                 self.status.msg["status"] = "error"
-                self.status.msg["message"] = "Configuration file not found in " + self.config_path + "/" + config + ".yaml"
+                self.status.msg[
+                    "message"] = "Configuration file not found in " + self.config_path + "/" + config + ".yaml"
                 self.status.msg["data"] = {}
                 return self.status.msg
 
-
     def configuration_set_config(self, config, fleet):
-        #Initialize worker with fleet and port
+        # Initialize worker with fleet and port
         fleet = self.cl_fleet.clean_list(fleet)
         fleet_name = self.cl_fleet.fleet
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Check if there is any busy process in the fleet
+        # Check if there is any busy process in the fleet
         cl_list = self.clearance_list(fleet)
         nogo = {}
         for name in fleet:
@@ -225,16 +225,17 @@ class MultiArchAPIClient:
             self.status.msg["data"] = cl_list
             return self.status.msg
 
-        #Initialize with main response
+        # Initialize with main response
         main_response = self.main_api.configuration_set_config(config)
-        #Create list for logging
+        # Create list for logging
         self.id_list[fleet_name] = main_response
         print(self.id_list)
         self.id_list[fleet_name]["data"] = {}
         for name in fleet:
-            self.id_list[fleet_name]["data"][name] = self.work.http_get_request(device=name, endpoint='/configuration/set/' + config)["data"]
+            self.id_list[fleet_name]["data"][name] = \
+            self.work.http_get_request(device=name, endpoint='/configuration/set/' + config)["data"]
 
-        #Create response message
+        # Create response message
         set_config_list = main_response["data"]
         set_config_list["data"] = self.id_list[fleet_name]["data"]
         print("debug_checkpoint")
@@ -245,34 +246,34 @@ class MultiArchAPIClient:
         self.status.msg["data"] = set_config_list
         return self.status.msg
 
-
     def monitor_id(self, id, fleet):
-        #Initialize worker with fleet and port
+        # Initialize worker with fleet and port
         fleet = self.cl_fleet.clean_list(fleet)
         fleet_name = self.cl_fleet.fleet
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Initialize with main response
+        # Initialize with main response
         main_response = self.main_api.monitor_id(id)
 
-        #This is only required outside of Dashboard, as Dashboard automatically uses most recent id (coupled with 'set' requests)
-        #Clean up self.id_list working after integration in Dashboard
+        # This is only required outside of Dashboard, as Dashboard automatically uses most recent id (coupled with 'set' requests)
+        # Clean up self.id_list working after integration in Dashboard
         ########################################################################################################
-        #Is there a process going on?
+        # Is there a process going on?
         if fleet_name in self.id_list:
-            #Check if id is a match with most recent process on main device
+            # Check if id is a match with most recent process on main device
             log_id = self.id_list[fleet_name]["job_id"]
             if int(log_id) == int(id):
-                #Initialize list
+                # Initialize list
                 monitor_list = main_response
                 monitor_list["data"] = {}
-                #Include messages from fleet
+                # Include messages from fleet
                 id_list = self.id_list[fleet_name]["data"]
                 for name in fleet:
-                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(id_list[name]["job_id"]))
+                    monitor_list["data"][name] = self.work.http_get_request(device=name, endpoint='/monitor/' + str(
+                        id_list[name]["job_id"]))
                     monitor_list["data"][name] = monitor_list["data"][name]["data"]
 
-                #msg
+                # msg
                 monitor_id_list = {}
                 monitor_id_list["data"] = monitor_list["data"]
                 monitor_id_list["data"][self.main_name] = main_response
@@ -281,41 +282,42 @@ class MultiArchAPIClient:
                 self.status.msg["message"] = {}
                 self.status.msg["data"] = monitor_id_list["data"]
                 return self.status.msg
-            else: #false id
+            else:  # false id
                 self.status.msg["status"] = "error"
-                self.status.msg["message"] = "The specified id " + str(id) + " does not match most recent process for fleet " + fleet_name
+                self.status.msg["message"] = "The specified id " + str(
+                    id) + " does not match most recent process for fleet " + fleet_name
                 self.status.msg["data"] = {}
                 return self.status.msg
-        else: #no process
+        else:  # no process
             self.status.msg["status"] = "error"
             self.status.msg["message"] = "There is no process for fleet " + fleet_name
             self.status.msg["data"] = {}
             return self.status.msg
         ########################################################################################################
 
-
     def info_fleet(self, fleet):
-        #Initialize worker with fleet and port
+        # Initialize worker with fleet and port
         fleet = self.cl_fleet.clean_list(fleet)
         fleet_name = self.cl_fleet.fleet
         self.work = MultiApiWorker(fleet=fleet, port=self.port)
 
-        #Initialize with main response
+        # Initialize with main response
         try:
-            with open(self.cl_fleet.fleet_path + fleet_name + ".yaml", 'r') as file: #replace with data/config/fleets/...
+            with open(self.cl_fleet.fleet_path + fleet_name + ".yaml",
+                      'r') as file:  # replace with data/config/fleets/...
                 info_fleet = yaml.load(file, Loader=yaml.FullLoader)
                 self.status.msg["status"] = "ok"
                 self.status.msg["message"] = {}
                 self.status.msg["data"] = info_fleet
                 return self.status.msg
-        except FileNotFoundError: #error msg
+        except FileNotFoundError:  # error msg
             self.status.msg["status"] = "error"
-            self.status.msg["message"] = "Fleet file not found in /data/assets/.../lists/" + fleet_name + ".yaml" #replace with data/config/fleets/...
+            self.status.msg[
+                "message"] = "Fleet file not found in /data/assets/.../lists/" + fleet_name + ".yaml"  # replace with data/config/fleets/...
             self.status.msg["data"] = {}
             return {}
 
-
-    #def fleet_scan(self):
+    # def fleet_scan(self):
     #    return self.scan.device_list #see configuration_info as well for use!
     #    FleetScanner(service_in_callback=cb)
     #    #don't use a fleet, just return all available devices on the network,
@@ -325,8 +327,23 @@ class MultiArchAPIClient:
     #    return self.available_devices
 
     def fleet_scan(self):
-        available_devices = self.scan.scan() 
-        return available_devices
+        unique_devices = ['autobot1', 'autobot2', 'autobot3', ' watchtower1', 'watchtower1']
+        online_devices = []
+        offline_devices = []
+        available_devices = self.scan.scan()
+        for device in unique_devices:
+            if device in available_devices:
+                online_devices.append(device)
+            else:
+                offline_devices.append(device)
+        return {
+            "status": "ok",
+            "message": None,
+            "data": {
+                "online": online_devices,
+                "offline": offline_devices
+            }
+        }
         '''
         unique_devices = []
         for file_yaml in list_of_files:
@@ -342,28 +359,29 @@ class MultiArchAPIClient:
         '''
 
     def clearance_list(self, cl_fleet):
-        #Note: this already takes in a clean fleet list
-        #Initialize with main response
+        # Note: this already takes in a clean fleet list
+        # Initialize with main response
         cl_list = {}
         cl_list[self.main_name] = self.main_api.clearance()
 
-        #Proceed with fleet devices
+        # Proceed with fleet devices
         for name in cl_fleet:
             cl_list[name] = self.work.http_get_request(device=name, endpoint='/clearance')
         return cl_list
 
-    def fleet_scan(self, list_of_files):
-        unique_devices = []
-        for file_yaml in list_of_files:
-            try:
-                with open(file_yaml, 'r') as file:
-                    data_from_file = yaml.load(file)
-                    for device in data_from_file['devices']:
-                        if device not in unique_devices:
-                            unique_devices.append(device)
-            except FileNotFoundError:
-                return 'The file not exists'
-        return unique_devices
+    # def fleet_scan(self, list_of_files):
+    #     unique_devices = []
+    #     for file_yaml in list_of_files:
+    #         try:
+    #             with open(file_yaml, 'r') as file:
+    #                 data_from_file = yaml.load(file)
+    #                 for device in data_from_file['devices']:
+    #                     if device not in unique_devices:
+    #                         unique_devices.append(device)
+    #         except FileNotFoundError:
+    #             return 'The file not exists'
+    #     return unique_devices
+
 
 """
     def something(self):
