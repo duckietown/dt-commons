@@ -11,7 +11,7 @@ import json
 
 from .multi_arch_worker import MultiApiWorker
 from .clean_fleet import CleanFleet
-#from .listener import FleetScanner
+from .listener import FleetScanner
 
 #Import from another folder within dt-commons (no base image)
 from dt_archapi_utils.arch_client import ArchAPIClient
@@ -35,7 +35,7 @@ class MultiArchAPIClient:
         self.dt_version = "ente"
         self.status = ApiMessage()
         self.cl_fleet = CleanFleet()
-        #self.scan = FleetScanner()
+        self.scan = FleetScanner()
 
         #Define robot_type
         self.robot_type = "none"
@@ -324,6 +324,22 @@ class MultiArchAPIClient:
     #    self.available_devices["available devices"], self.appear_msgs = self.scan.listen_to_network()
     #    return self.available_devices
 
+    def fleet_scan(self):
+        available_devices = self.scan.scan() 
+        return available_devices
+        '''
+        unique_devices = []
+        for file_yaml in list_of_files:
+            try:
+                with open(file_yaml, 'r') as file:
+                    data_from_file = yaml.load(file)
+                    for device in data_from_file['devices']:
+                        if device not in unique_devices:
+                            unique_devices.append(device)
+            except FileNotFoundError:
+                return 'The file not exists'
+        return unique_devices
+        '''
 
     def clearance_list(self, cl_fleet):
         #Note: this already takes in a clean fleet list
