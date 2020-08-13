@@ -317,46 +317,39 @@ class MultiArchAPIClient:
             self.status.msg["data"] = {}
             return {}
 
-    # def fleet_scan(self):
-    #    return self.scan.device_list #see configuration_info as well for use!
-    #    FleetScanner(service_in_callback=cb)
-    #    #don't use a fleet, just return all available devices on the network,
-    #    #as a function that can be used by calling the architecture API
-    #    self.available_devices = {}
-    #    self.available_devices["available devices"], self.appear_msgs = self.scan.listen_to_network()
-    #    return self.available_devices
-
     def fleet_scan(self):
-        unique_devices = ['autobot1', 'autobot2', 'autobot3', ' watchtower1', 'watchtower1']
+        unique_devices = []
         online_devices = []
         offline_devices = []
+        data = {}
+        files_yaml = [
+            f for f  in os.listdir(self.cl_fleet.fleet_path)
+            if os.path.isfile(os.path.join(self.cl_fleet.fleet_path, f))
+        ]
+        for file_yaml in files_yaml:
+            try:
+                with open(os.path.join(self.cl_fleet.fleet_path, file_yaml)) as file:
+                    data_from_file = yaml.load(file, Loader=yaml.FullLoader)
+                    for device in data_from_file['devices']:
+                        if device not in unique_devices:
+                            unique_devices.append(device)
+            except yaml.YAMLError:
+                pass
+        
         available_devices = self.scan.scan()
         for device in unique_devices:
             if device in available_devices:
                 online_devices.append(device)
             else:
                 offline_devices.append(device)
+        data["online"] = online_devices
+        data["offline"] = offline_devices
         return {
             "status": "ok",
             "message": None,
-            "data": {
-                "online": online_devices,
-                "offline": offline_devices
-            }
+            "data": data
         }
-        '''
-        unique_devices = []
-        for file_yaml in list_of_files:
-            try:
-                with open(file_yaml, 'r') as file:
-                    data_from_file = yaml.load(file)
-                    for device in data_from_file['devices']:
-                        if device not in unique_devices:
-                            unique_devices.append(device)
-            except FileNotFoundError:
-                return 'The file not exists'
-        return unique_devices
-        '''
+
 
     def clearance_list(self, cl_fleet):
         # Note: this already takes in a clean fleet list
@@ -368,20 +361,6 @@ class MultiArchAPIClient:
         for name in cl_fleet:
             cl_list[name] = self.work.http_get_request(device=name, endpoint='/clearance')
         return cl_list
-
-    # def fleet_scan(self, list_of_files):
-    #     unique_devices = []
-    #     for file_yaml in list_of_files:
-    #         try:
-    #             with open(file_yaml, 'r') as file:
-    #                 data_from_file = yaml.load(file)
-    #                 for device in data_from_file['devices']:
-    #                     if device not in unique_devices:
-    #                         unique_devices.append(device)
-    #         except FileNotFoundError:
-    #             return 'The file not exists'
-    #     return unique_devices
-
 
 """
     def something(self):

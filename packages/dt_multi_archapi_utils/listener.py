@@ -9,10 +9,9 @@ class FleetScanner:
         self.type = "_duckietown._tcp.local."
         self.listener = DiscoverListener()
         self.zeroconf = Zeroconf()
+        ServiceBrowser(self.zeroconf, self.type, self.listener)
 
     def scan(self):
-        browser = ServiceBrowser(self.zeroconf, self.type, self.listener)
-        time.sleep(1)
         return self.listener.get_all_online_devices()
 
 
@@ -35,7 +34,8 @@ class DiscoverListener():
         name, server = self.process_service_name(name)
         if not name:
             return
-        del self.services[name][server]
+        if server in self.services[name]:
+            del self.services[name][server]
 
     def add_service(self, zeroconf, type, sname):
         name, server = self.process_service_name(sname)
@@ -51,7 +51,4 @@ class DiscoverListener():
         }
 
     def get_all_online_devices(self):
-        hostnames = set()
-        for service in self.supported_services:
-            hostnames.update(self.services[service])
-        return list(sorted(hostnames))
+        return self.services["DT::ONLINE"]
