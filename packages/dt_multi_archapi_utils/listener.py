@@ -48,5 +48,8 @@ class DiscoverListener():
             'txt': txt
         }
 
+    def update_service(self, service_info):
+        pass 
+
     def get_all_online_devices(self):
         return self.services["DT::ONLINE"]
