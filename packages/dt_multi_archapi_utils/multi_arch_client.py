@@ -318,6 +318,11 @@ class MultiArchAPIClient:
             return {}
 
     def fleet_scan(self):
+        '''get online and offline devices in network
+
+        Returns:
+        online and offline devices(list)
+        '''
         unique_devices = []
         online_devices = []
         offline_devices = []

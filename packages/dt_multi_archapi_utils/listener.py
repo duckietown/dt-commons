@@ -1,15 +1,13 @@
 from zeroconf import ServiceBrowser, Zeroconf
 from collections import defaultdict
 import json
-import time
 
 class FleetScanner:
 
     def __init__(self):
-        self.type = "_duckietown._tcp.local."
         self.listener = DiscoverListener()
         self.zeroconf = Zeroconf()
-        ServiceBrowser(self.zeroconf, self.type, self.listener)
+        ServiceBrowser(self.zeroconf, "_duckietown._tcp.local.", self.listener)
 
     def scan(self):
         return self.listener.get_all_online_devices()
