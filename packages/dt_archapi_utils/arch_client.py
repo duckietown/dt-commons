@@ -7,8 +7,7 @@ import os
 import shutil
 import git
 import glob
-import json
-import requests
+
 from git import Repo
 from .arch_message import ApiMessage
 from .arch_worker import ApiWorker
