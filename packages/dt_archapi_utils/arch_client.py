@@ -372,4 +372,3 @@ class ArchAPIClient:
             error_msg["message"] = str(e) 
             error_msg["data"] = None
             return error_msg
-    
