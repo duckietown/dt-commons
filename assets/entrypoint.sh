@@ -2,6 +2,7 @@
 
 # constants
 CONFIG_DIR=/data/config
+USER_SOURCE_DIR=/user-code
 ROBOT_TYPE_FILE=${CONFIG_DIR}/robot_type
 ROBOT_CONFIGURATION_FILE=${CONFIG_DIR}/robot_configuration
 ROBOT_HARDWARE_FILE=${CONFIG_DIR}/robot_hardware
@@ -86,9 +87,16 @@ configure_vehicle(){
 configure_python(){
   # make the code discoverable by python
   for d in $(find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
-    if [ "${DEBUG}" = "1" ]; then echo " > Adding ${d}/packages to PYTHONPATH"; fi
+    debug " > Adding ${d}/packages to PYTHONPATH"
     export PYTHONPATH="${d}/packages:${PYTHONPATH}"
   done
+  # make the (user) code discoverable by python
+  if [ -d "${USER_SOURCE_DIR}" ]; then
+      for d in $(find "${USER_SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
+        debug " > Adding ${d}/packages to PYTHONPATH"
+        export PYTHONPATH="${d}/packages:${PYTHONPATH}"
+      done
+  fi
 }
 
 
@@ -104,11 +112,13 @@ configure_ROS(){
     "/opt/ros/${ROS_DISTRO}/setup.bash"
     "${SOURCE_DIR}/catkin_ws/devel/setup.bash"
     "${SOURCE_DIR}/setup.sh"
+    "${USER_SOURCE_DIR}/catkin_ws/devel/setup.bash"
   )
 
   # setup ros environment
   for ROS_SETUP_FILE in "${ROS_SETUP[@]}"; do
     if [ -f "${ROS_SETUP_FILE}" ]; then
+      debug "Sourcing file '${ROS_SETUP_FILE}'."
       source "${ROS_SETUP_FILE}";
     fi
   done
