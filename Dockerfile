@@ -49,6 +49,17 @@ RUN dt-apt-install "${REPO_PATH}/dependencies-apt.txt"
 COPY ./dependencies-py3.txt "${REPO_PATH}/"
 RUN pip3 install --use-feature=2020-resolver -r ${REPO_PATH}/dependencies-py3.txt
 
+# install LCM
+RUN cd /tmp/ \
+    && git clone -b v1.4.0 https://github.com/lcm-proj/lcm \
+    && mkdir -p lcm/build \
+    && cd lcm/build \
+    && cmake .. \
+    && make \
+    && make install \
+    && cd ~ \
+    && rm -rf /tmp/lcm
+
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
 

@@ -1,1 +1,6 @@
 # LIST YOUR APT PACKAGES HERE
+
+# dependencies for LCM
+build-essential
+libglib2.0-dev
+cmake
