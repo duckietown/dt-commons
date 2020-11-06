@@ -1,5 +1,5 @@
 import threading
-from typing import Callable
+from typing import Callable, Union
 
 import lcm
 import logging
@@ -14,6 +14,7 @@ class DTCommunicationGroup(object):
 
     IP_NETWORK = "239.255.0.0/20"
     DEFAULT_PORT = "7667"
+    DEFAULT_CHANNEL = "/__default__"
     LCM_HEARTBEAT_HZ = 1
 
     def __init__(self, name: str, ttl: int = 1, loglevel: int = logging.WARNING):
@@ -33,6 +34,10 @@ class DTCommunicationGroup(object):
         self._mailman.start()
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def name(self):
         return self._name
 
@@ -48,11 +53,20 @@ class DTCommunicationGroup(object):
     def is_shutdown(self):
         return self._is_shutdown
 
-    def Publisher(self, topic: str):
-        return DTCommunicationGroupPublisher(self, topic)
+    def Subgroup(self, name: str, loglevel: int = None):
+        if loglevel is None:
+            loglevel = self._logger.level
+        return DTCommunicationSubGroup(self, name, loglevel)
 
-    def Subscriber(self, topic: str, callback: Callable):
-        return DTCommunicationGroupSubscriber(self, topic, callback)
+    def Publisher(self):
+        pub = DTCommunicationGroupPublisher(self, self.DEFAULT_CHANNEL)
+        self.add_publisher(pub)
+        return pub
+
+    def Subscriber(self, callback: Callable):
+        sub = DTCommunicationGroupSubscriber(self, self.DEFAULT_CHANNEL, callback)
+        self.add_subscriber(sub)
+        return sub
 
     def add_publisher(self, publisher: 'DTCommunicationGroupPublisher'):
         self._publishers.add(publisher)
@@ -100,12 +114,67 @@ class DTCommunicationGroup(object):
             pass
 
 
+class DTCommunicationSubGroup(object):
+
+    def __init__(self, group: DTCommunicationGroup, name: str, loglevel: int = logging.WARNING):
+        self._group = group
+        self._name = '/' + name.strip('/')
+        self._is_shutdown = False
+        self._logger = logging.getLogger(f'CommSubGroup[#{self._group.id}{self._name}]')
+        self._logger.setLevel(loglevel)
+        self._publishers = set()
+        self._subscribers = set()
+
+    @property
+    def handler(self):
+        return self._group.handler
+
+    @property
+    def is_shutdown(self):
+        return self._is_shutdown
+
+    def Publisher(self):
+        pub = DTCommunicationGroupPublisher(self, self._name)
+        self.add_publisher(pub)
+        return pub
+
+    def Subscriber(self, callback: Callable):
+        sub = DTCommunicationGroupSubscriber(self, self._name, callback)
+        self.add_subscriber(sub)
+        return sub
+
+    def add_publisher(self, publisher: 'DTCommunicationGroupPublisher'):
+        self._publishers.add(publisher)
+        self._group.add_publisher(publisher)
+
+    def add_subscriber(self, subscriber: 'DTCommunicationGroupSubscriber'):
+        self._subscribers.add(subscriber)
+        self._group.add_subscriber(subscriber)
+
+    def remove_publisher(self, publisher: 'DTCommunicationGroupPublisher'):
+        self._publishers.remove(publisher)
+        self._group.remove_publisher(publisher)
+
+    def remove_subscriber(self, subscriber: 'DTCommunicationGroupSubscriber'):
+        self._subscribers.remove(subscriber)
+        self._group.remove_subscriber(subscriber)
+
+    def shutdown(self):
+        # shutdown all publishers
+        for pub in self._publishers:
+            pub.shutdown()
+        # shutdown all subscribers
+        for sub in self._subscribers:
+            sub.shutdown()
+        # ---
+        self._is_shutdown = True
+
+
 class DTCommunicationGroupPublisher(object):
 
-    def __init__(self, group: DTCommunicationGroup, topic: str):
+    def __init__(self, group: Union[DTCommunicationGroup, DTCommunicationSubGroup], topic: str):
         self._group = group
         self._topic = topic
-        self._group.add_publisher(self)
 
     def publish(self, msg: bytes):
         self._group.handler.publish(self._topic, msg)
@@ -116,12 +185,12 @@ class DTCommunicationGroupPublisher(object):
 
 class DTCommunicationGroupSubscriber(object):
 
-    def __init__(self, group: DTCommunicationGroup, topic: str, callback: Callable):
+    def __init__(self, group: Union[DTCommunicationGroup, DTCommunicationSubGroup],
+                 topic: str, callback: Callable):
         self._group = group
         self._topic = topic
         self._callback = callback
         self._subscription_handler = self._group.handler.subscribe(self._topic, self._callback)
-        self._group.add_subscriber(self)
 
     def shutdown(self):
         self._group.handler.unsubscribe(self._subscription_handler)

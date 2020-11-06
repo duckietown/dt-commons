@@ -5,7 +5,7 @@ struct dt_communication_msg_t
     // Time in microsecs since epoch of the creation of this message;
     int64_t  timestamp;
 
-    // Destination group of this message;
+    // (Optional) Destination group of this message;
     string   group;
 
     // (Optional) Hostname of the origin machine of this message;
@@ -16,7 +16,7 @@ struct dt_communication_msg_t
     //       within the group. The endpoint will be responsible for discarding it.
     string   destination;
 
-    // Following the spirit of zeroconf messages, this is an optional field
+    // (Optional) Following the spirit of zeroconf messages, this is an optional field
     // that the user can populate with application-specific data;
     // Suggestion here is to agree on always passing JSON strings.
     string   txt;
