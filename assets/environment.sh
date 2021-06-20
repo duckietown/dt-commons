@@ -6,7 +6,7 @@ export ROS_HOME=/tmp
 export ROSCONSOLE_STDOUT_LINE_BUFFERED=1
 
 # source entrypoint if it hasn't been done
-if [ "${DT_ENTRYPOINT_SOURCED}" != "1" ]; then
+if [ "${DT_ENTRYPOINT_SOURCED-unset}" != "1" ]; then
     source /entrypoint.sh
 fi
 
