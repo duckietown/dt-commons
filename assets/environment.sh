@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -eu
 export DEBUG=1
 export ROS_HOME=/tmp
 export ROSCONSOLE_STDOUT_LINE_BUFFERED=1
@@ -58,12 +58,12 @@ dt-exec() {
 }
 
 
-dt-exec-2-bg() {
+dt-exec-BG() {
     cmd="$@"
     eval "stdbuf -o L ${cmd%&} 1>&2 &"
 }
 
-dt-exec-2-fg() {
+dt-exec-FG() {
     cmd="$@"
     eval "stdbuf -o L ${cmd%&} 1>&2 "
 }
