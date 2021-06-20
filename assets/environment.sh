@@ -51,3 +51,14 @@ dt-exec() {
     cmd="${cmd%&} &"
     eval "${cmd}"
 }
+
+
+dt-exec-2-bg() {
+    cmd="$@"
+    eval "stdbuf -o L ${cmd%&} 1>&2 &"
+}
+
+dt-exec-2-fg() {
+    cmd="$@"
+    eval "stdbuf -o L ${cmd%&} 1>&2 "
+}
