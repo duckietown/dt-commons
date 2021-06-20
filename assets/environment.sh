@@ -1,7 +1,12 @@
 #!/bin/bash
 
+set -eu
+export DEBUG=1
+export ROS_HOME=/tmp
+export ROSCONSOLE_STDOUT_LINE_BUFFERED=1
+
 # source entrypoint if it hasn't been done
-if [ "${DT_ENTRYPOINT_SOURCED}" != "1" ]; then
+if [ "${DT_ENTRYPOINT_SOURCED-unset}" != "1" ]; then
     source /entrypoint.sh
 fi
 
@@ -50,4 +55,21 @@ dt-exec() {
     cmd="$@"
     cmd="${cmd%&} &"
     eval "${cmd}"
+}
+
+
+dt-exec-BG() {
+    cmd="$@"
+    eval "stdbuf -o L ${cmd%&} 1>&2 &"
+}
+
+dt-exec-FG() {
+    cmd="$@"
+    eval "stdbuf -o L ${cmd%&} 1>&2 "
+}
+
+copy-ros-logs() {
+
+  find /tmp/log  -type f  -name "*.log" -exec cp {} /challenges/challenge-solution-output \;
+
 }
