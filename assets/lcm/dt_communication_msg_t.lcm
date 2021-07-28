@@ -1,0 +1,30 @@
+package dt_communication_utils;
+
+struct dt_communication_msg_t
+{
+    // Time in microsecs since epoch of the creation of this message;
+    int64_t  timestamp;
+
+    // (Optional) Destination group of this message;
+    string   group;
+
+    // (Optional) Hostname of the origin machine of this message;
+    string   origin;
+
+    // (Optional) Hostname of the destination machine of this message;
+    // NOTE: Given the UDPm nature of LCM, this message will be delivered to everybody
+    //       within the group. The endpoint will be responsible for discarding it.
+    string   destination;
+
+    // (For Internal use only) (Optional) Contains metadata encoded as a JSON string.
+    string   metadata;
+
+    // (Optional) Following the spirit of zeroconf messages, this is an optional field
+    // that the user can populate with application-specific data;
+    // Suggestion here is to agree on always passing JSON strings.
+    string   txt;
+
+    // Payload and payload length
+    int32_t  length;
+    byte     payload[length];
+}

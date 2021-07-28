@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import socket
+import netifaces
+import ipaddress
+
+from dt_module_utils import get_module_id
+
+DOCKER_BRIDGE_NAME = "docker0"
+DOCKER_BRIDGE_DEFAULT_IP_NETWORK = "172.17.0.0/16"
+CONTAINER_ID = get_module_id()
+
+
+def end(mode):
+    print(mode)
+    exit(0)
+
+
+if __name__ == '__main__':
+    # if the hostname is a prefix for the container's ID, we are in bridge mode
+    hostname = socket.gethostname()
+    if CONTAINER_ID.startswith(hostname):
+        end("BRIDGE")
+    # if we see an interface `docker0`, it means that we are net=host
+    if DOCKER_BRIDGE_NAME in netifaces.interfaces():
+        end("HOST")
+    # get default gateway
+    gateways = netifaces.gateways()
+    if "default" not in gateways:
+        end("NONE")
+    if netifaces.AF_INET not in gateways["default"]:
+        end("NONE")
+    gateway_ip, _ = gateways["default"][netifaces.AF_INET]
+    gateway_ip = ipaddress.ip_address(gateway_ip)
+    docker_bridge_net = ipaddress.ip_network(DOCKER_BRIDGE_DEFAULT_IP_NETWORK)
+    if gateway_ip in docker_bridge_net:
+        end("BRIDGE")
+    else:
+        end("HOST")

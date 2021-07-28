@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+import os
+import re
+
+CPUSET_FPATH = "/proc/1/cpuset"
+MOUNTS_INFO_FPATH = "/proc/1/mountinfo"
+DOCKER_HOSTNAME_MOUNT_REGEX = r'.*\/containers\/([0-9a-f]+)\/hostname\s\/etc\/hostname.*'
+
+
+def end(result: str):
+    print(result)
+    exit(0)
+
+
+if __name__ == '__main__':
+    # try first method, example of "good" content for /proc/1/cpuset is:
+    #
+    #       /docker/9cc113ade4799f6ff6725fc4bb420bb616b9e5843fbe0dfbb26993806e012c3a
+    #
+    with open(CPUSET_FPATH, "rt") as fin:
+        cpuset = fin.read().strip()
+    container_id = os.path.basename(cpuset)
+    if len(container_id) >= 12:
+        end(container_id)
+
+    # fall back to second method, look at the mountpoint for /etc/hostname.
+    # example of "good" content for /proc/1/mountinfo is:
+    #
+    #       ...
+    #       1880 1375 259:2 /var/lib/docker/containers/e0a5ee41f3c7426148dba01726a7f762f2b3b0778e4c77729c3185305eb92378/resolv.conf /etc/resolv.conf rw,relatime - ext4 /dev/nvme0n1p2 rw,errors=remount-ro
+    #       1881 1375 259:2 /var/lib/docker/containers/e0a5ee41f3c7426148dba01726a7f762f2b3b0778e4c77729c3185305eb92378/hostname /etc/hostname rw,relatime - ext4 /dev/nvme0n1p2 rw,errors=remount-ro
+    #       1882 1375 259:2 /var/lib/docker/containers/e0a5ee41f3c7426148dba01726a7f762f2b3b0778e4c77729c3185305eb92378/hosts /etc/hosts rw,relatime - ext4 /dev/nvme0n1p2 rw,errors=remount-ro
+    #       ...
+    #
+    with open(MOUNTS_INFO_FPATH, "rt") as fin:
+        mounts = fin.readlines()
+    for mount in mounts:
+        mount = mount.strip()
+        match = re.match(DOCKER_HOSTNAME_MOUNT_REGEX, mount)
+        if match:
+            container_id = match.group(1)
+            end(container_id)
+
+    end("__NOTSET__")

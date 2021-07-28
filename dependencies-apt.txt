@@ -1,1 +1,9 @@
 # LIST YOUR APT PACKAGES HERE
+
+# dependencies for LCM
+build-essential
+libglib2.0-dev
+cmake
+
+# used to find out whether we are inside a net=host container in the entrypoint
+net-tools

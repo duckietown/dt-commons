@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import sys
+
+from dt_triggers_utils import set_trigger
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("Usage:   dt-set-trigger <TRIGGER> <SIGNAL>")
+        exit(1)
+    # set trigger
+    _, trigger, signal = sys.argv
+    try:
+        set_trigger(trigger, signal)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")

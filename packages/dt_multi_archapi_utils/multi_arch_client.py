@@ -14,8 +14,8 @@ from .clean_fleet import CleanFleet
 #from .listener import FleetScanner
 
 #Import from another folder within dt-commons (no base image)
-from dt_archapi_utils.arch_client import ArchAPIClient
-from dt_archapi_utils.arch_message import ApiMessage
+from .arch_client import ArchAPIClient
+from .arch_message import ApiMessage
 
 '''
     THIS LIB INCLUDES FUNCTIONS THAT ALLOW TO COMMUNICATE WITH AN EXTENDED

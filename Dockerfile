@@ -5,13 +5,13 @@ ARG DESCRIPTION="Base image containing common libraries and environment setup fo
 ARG ICON="square"
 
 ARG ARCH=arm32v7
-ARG DISTRO=ente
+ARG DISTRO=daffy
 ARG BASE_TAG=${DISTRO}-${ARCH}
 ARG BASE_IMAGE=dt-base-environment
 ARG LAUNCHER=default
 
 # define base image
-FROM duckietown/${BASE_IMAGE}:${BASE_TAG}
+FROM duckietown/${BASE_IMAGE}:${BASE_TAG} as BASE
 
 # recall all arguments
 ARG REPO_NAME
@@ -47,7 +47,22 @@ RUN dt-apt-install "${REPO_PATH}/dependencies-apt.txt"
 
 # install python dependencies
 COPY ./dependencies-py3.txt "${REPO_PATH}/"
-RUN pip3 install -r ${REPO_PATH}/dependencies-py3.txt
+RUN pip3 install --use-feature=2020-resolver -r ${REPO_PATH}/dependencies-py3.txt
+
+# install LCM
+RUN cd /tmp/ \
+    && git clone -b v1.4.0 https://github.com/lcm-proj/lcm \
+    && mkdir -p lcm/build \
+    && cd lcm/build \
+    && cmake .. \
+    && make \
+    && make install \
+    && cd ~ \
+    && rm -rf /tmp/lcm
+
+# configure arch-specific environment
+COPY assets/setup/by-arch/${ARCH} /tmp/.setup-by-arch
+RUN /tmp/.setup-by-arch/setup.sh
 
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
@@ -59,8 +74,13 @@ COPY ./assets/bin/. /usr/local/bin/
 COPY assets/entrypoint.sh /entrypoint.sh
 COPY assets/environment.sh /environment.sh
 
+# copy code setup script
+COPY assets/code/setup.bash /code/setup.bash
+
+# source environment on every bash session
+RUN echo "source /environment.sh" >> ~/.bashrc
+
 # configure entrypoint
-COPY assets/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
 # install launcher scripts

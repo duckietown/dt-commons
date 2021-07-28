@@ -11,6 +11,10 @@ if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']
     logger.setLevel(logging.DEBUG)
 
 
+def get_module_id():
+    return os.environ.get("DT_MODULE_INSTANCE", None)
+
+
 def get_module_health():
     health = "ND"
     if os.path.isfile(HEALTH_FILE):

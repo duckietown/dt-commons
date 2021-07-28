@@ -26,15 +26,25 @@ class DTProcess(object):
         logging.basicConfig()
         self.logger = logging.getLogger(self._app_name)
         self.logger.setLevel(logging.INFO)
+        self._is_debug = False
         if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']:
             self.logger.setLevel(logging.DEBUG)
+            self._is_debug = True
         self._start_time = time.time()
         self.status = AppStatus.RUNNING
         # store singleton
         DTProcess.__instance__ = self
 
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def is_debug(self):
+        return self._is_debug
+
     @staticmethod
-    def get_instance():
+    def get_instance() -> 'DTProcess':
         return DTProcess.__instance__
 
     def start_time(self):
@@ -42,10 +52,6 @@ class DTProcess(object):
 
     def uptime(self):
         return time.time() - self._start_time
-
-    @property
-    def status(self):
-        return self._status
 
     def name(self):
         return self._app_name
