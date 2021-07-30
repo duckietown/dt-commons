@@ -10,5 +10,5 @@ flask-cors
 requests
 
 # these are needed to support virtual robots
-protobuf
+cbor2
 pyzmq
