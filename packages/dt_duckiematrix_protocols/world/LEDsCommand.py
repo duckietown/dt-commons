@@ -2,6 +2,8 @@ from typing import Dict
 
 import dataclasses
 
+from cbor2 import loads
+
 from dt_duckiematrix_protocols.world import CBor2Message
 
 
@@ -17,5 +19,14 @@ class LEDsCommand(CBor2Message):
 
     def as_dict(self) -> dict:
         return {
-            led_key: led.__dict__ for led_key, led in self.leds.items()
+            "leds": {led_key: led.__dict__ for led_key, led in self.leds.items()}
         }
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> 'LEDsCommand':
+        d = loads(data)
+        return LEDsCommand(
+            leds={
+                str(i): LEDCommand(**l) for i, l in d['leds'].items()
+            }
+        )

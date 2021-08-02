@@ -9,3 +9,7 @@ class CameraFrame(CBor2Message):
     width: int
     height: int
     frame: bytes
+
+    @classmethod
+    def from_jpeg(cls, jpeg: bytes) -> 'CameraFrame':
+        return CameraFrame("jpeg", 0, 0, jpeg)

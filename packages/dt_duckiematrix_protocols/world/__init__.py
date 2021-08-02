@@ -1,4 +1,4 @@
-from cbor2 import dumps
+from cbor2 import dumps, loads
 
 
 class CBor2Message:
@@ -8,3 +8,7 @@ class CBor2Message:
 
     def to_bytes(self) -> bytes:
         return dumps(self.as_dict())
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> 'CBor2Message':
+        return cls(**loads(data))
