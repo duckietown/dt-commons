@@ -2,9 +2,9 @@ from typing import Dict
 
 import dataclasses
 
-from dt_duckiematrix_protocols.world import CBor2Message
+from dt_duckiematrix_protocols import CBorMessage
 
 
 @dataclasses.dataclass
-class WheelEncoderTicks(CBor2Message):
+class WheelEncoderTicks(CBorMessage):
     ticks: int

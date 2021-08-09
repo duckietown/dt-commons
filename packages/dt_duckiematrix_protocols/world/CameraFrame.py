@@ -1,10 +1,10 @@
 import dataclasses
 
-from dt_duckiematrix_protocols.world import CBor2Message
+from dt_duckiematrix_protocols import CBorMessage
 
 
 @dataclasses.dataclass
-class CameraFrame(CBor2Message):
+class CameraFrame(CBorMessage):
     format: str
     width: int
     height: int

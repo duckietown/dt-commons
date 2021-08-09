@@ -4,7 +4,7 @@ import dataclasses
 
 from cbor2 import loads
 
-from dt_duckiematrix_protocols.world import CBor2Message
+from dt_duckiematrix_protocols import CBorMessage
 
 
 @dataclasses.dataclass
@@ -14,7 +14,7 @@ class LEDCommand:
 
 
 @dataclasses.dataclass
-class LEDsCommand(CBor2Message):
+class LEDsCommand(CBorMessage):
     leds: Dict[str, LEDCommand]
 
     def as_dict(self) -> dict:
