@@ -4,7 +4,7 @@ from typing import Optional, Callable, Dict, Set
 import zmq
 from cbor2 import loads
 
-from dt_duckiematrix_protocols.world import CBor2Message
+from dt_duckiematrix_protocols import CBorMessage
 from dt_duckiematrix_utils.configuration import \
     matrix_offers_connection, \
     get_matrix_hostname, \
@@ -98,7 +98,7 @@ class DuckieMatrixSocket(Thread):
         else:
             raise Exception("Socket not connected. Cannot unsubscribe a topic.")
 
-    def publish(self, topic: str, message: CBor2Message):
+    def publish(self, topic: str, message: CBorMessage):
         self.out_socket.send_multipart([topic.encode("ascii"), message.to_bytes()])
 
     def run(self) -> None:
