@@ -1,3 +1,4 @@
+import dataclasses
 from threading import Thread
 from typing import Optional, Callable, Dict, Set
 
@@ -6,11 +7,16 @@ from cbor2 import loads
 
 from dt_duckiematrix_protocols import CBorMessage
 from dt_duckiematrix_utils.configuration import \
-    matrix_offers_connection, \
     get_matrix_hostname, \
     get_matrix_input_port, \
     get_matrix_output_port, \
     get_matrix_protocol
+
+
+@dataclasses.dataclass
+class DuckieMatrixConnection:
+    data_in_uri: str
+    data_out_uri: str
 
 
 class DuckieMatrixSocket(Thread):
@@ -114,10 +120,14 @@ class DuckieMatrixSocket(Thread):
                     cback(message)
 
     @classmethod
-    def create(cls) -> Optional['DuckieMatrixSocket']:
-        if not matrix_offers_connection():
-            print("[duckiematrix-utils]: ERROR: No connection offered by the matrix")
-            return None
+    def _get_uri(cls, protocol: str, hostname: str, port: int):
+        if protocol == "icp":
+            return f"{protocol}://{hostname}"
+        else:
+            return f"{protocol}://{hostname}:{port}"
+
+    @classmethod
+    def get_pending_connection_request(cls) -> Optional[DuckieMatrixConnection]:
         # get hostname and port of the connector
         conn_proto = get_matrix_protocol()
         conn_host = get_matrix_hostname()
@@ -126,13 +136,16 @@ class DuckieMatrixSocket(Thread):
         if conn_host is None:
             print(f"[duckiematrix-utils]: ERROR: No connector host provided")
             return None
-        # create socket
-        uris = []
-        for conn_port in [in_conn_port, out_conn_port]:
-            if conn_proto == "icp":
-                uri = f"{conn_proto}://{conn_host}"
-            else:
-                uri = f"{conn_proto}://{conn_host}:{conn_port}"
-            uris.append(uri)
         # ---
-        return DuckieMatrixSocket(*uris)
+        return DuckieMatrixConnection(
+            data_in_uri=cls._get_uri(conn_proto, conn_host, in_conn_port),
+            data_out_uri=cls._get_uri(conn_proto, conn_host, out_conn_port),
+        )
+
+    @classmethod
+    def create(cls) -> Optional['DuckieMatrixSocket']:
+        request = cls.get_pending_connection_request()
+        if request is None:
+            return None
+        # ---
+        return DuckieMatrixSocket(request.data_in_uri, request.data_out_uri)
