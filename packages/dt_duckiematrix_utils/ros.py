@@ -1,26 +1,32 @@
+import dataclasses
 from typing import Callable
 
 import rospy
-
-from duckietown_msgs.msg import DuckiematrixConnectorsDescription
-
-from .socket import DuckieMatrixSocket
+from duckietown_msgs.msg import DuckiematrixLinkDescription as DuckiematrixLinkDescriptionMsg
 
 
-def on_duckiematrix_connection_request(callback: Callable[[str, str, str], None]):
+@dataclasses.dataclass
+class DuckiematrixLinkDescription:
+    matrix: str
+    uri: str
+    entity: str
+
+
+def on_duckiematrix_connection_request(callback: Callable[[DuckiematrixLinkDescription], None]):
     def _internal_callback(msg):
-        callback(msg.name, msg.data_in_uri, msg.data_out_uri)
+        link = DuckiematrixLinkDescription(
+            matrix=msg.matrix,
+            uri=msg.uri,
+            entity=msg.entity
+        )
+        callback(link)
     # setup subscriber
     rospy.Subscriber(
         _apply_namespace("duckiematrix/connect", 1),
-        DuckiematrixConnectorsDescription,
+        DuckiematrixLinkDescriptionMsg,
         _internal_callback,
         queue_size=1
     )
-    # if there is already a request pending, (maybe from env variables), trigger a callback
-    request = DuckieMatrixSocket.get_pending_connection_request()
-    if request is not None:
-        callback("local", request.data_in_uri, request.data_out_uri)
 
 
 def _apply_namespace(name, ns_level):
