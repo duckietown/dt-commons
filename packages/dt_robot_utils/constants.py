@@ -75,6 +75,8 @@ class RobotConfiguration(IntEnum):
     WS21A = 70
     WS21B = 71
     WS21C = 72
+    # Duckiecam
+    DC21 = 80
 
     @classmethod
     def from_string(cls, name) -> 'RobotConfiguration':
