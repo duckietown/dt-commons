@@ -19,7 +19,7 @@ class CleanFleet:
     def __init__(self):
         self.status = ApiMessage()
         self.fleet = None
-        self.dt_version = "ente"
+        self.dt_version = "daffy"
         self.fleet_path = "/data/assets/dt-architecture-data/lists/" #change to data/config/fleets/...
 
 

@@ -47,6 +47,8 @@ def get_device_hardware_brand() -> DeviceHardwareBrand:
     hw = os.environ.get('ROBOT_HARDWARE', 'UNKNOWN')
     if hw == 'raspberry_pi':
         return DeviceHardwareBrand.RASPBERRY_PI
+    if hw == 'raspberry_pi_64':
+        return DeviceHardwareBrand.RASPBERRY_PI_64
     elif hw == 'jetson_nano':
         return DeviceHardwareBrand.JETSON_NANO
     # ---

@@ -149,21 +149,21 @@ configure_python(){
 configure_ROS(){
   # check if ROS_MASTER_URI is set
   ROS_MASTER_URI_IS_SET=0
-  if [ -n "${ROS_MASTER_URI}" ]; then
+  if [ -n "${ROS_MASTER_URI-}" ]; then
     ROS_MASTER_URI_IS_SET=1
     echo "Forcing ROS_MASTER_URI=${ROS_MASTER_URI}"
   fi
 
   # check if ROS_HOSTNAME is set
   ROS_HOSTNAME_IS_SET=0
-  if [ -n "${ROS_HOSTNAME}" ]; then
+  if [ -n "${ROS_HOSTNAME-}" ]; then
     ROS_HOSTNAME_IS_SET=1
     echo "Forcing ROS_HOSTNAME=${ROS_HOSTNAME}"
   fi
 
   # check if ROS_IP is set
   ROS_IP_IS_SET=0
-  if [ -n "${ROS_IP}" ]; then
+  if [ -n "${ROS_IP-}" ]; then
     ROS_IP_IS_SET=1
     echo "Forcing ROS_IP=${ROS_IP}"
   fi

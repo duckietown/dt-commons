@@ -8,6 +8,7 @@ class DeviceHardwareBrand(IntEnum):
     UNKNOWN = 0
     RASPBERRY_PI = 1
     JETSON_NANO = 2
+    RASPBERRY_PI_64 = 3
 
 
 class DeviceHardwareModel(IntEnum):

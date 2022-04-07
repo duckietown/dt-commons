@@ -32,7 +32,7 @@ class MultiArchAPIClient:
 
         #Initialize folders and classes
         self.current_configuration = "none"
-        self.dt_version = "ente"
+        self.dt_version = "daffy"
         self.status = ApiMessage()
         self.cl_fleet = CleanFleet()
         #self.scan = FleetScanner()
