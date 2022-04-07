@@ -158,8 +158,10 @@ configure_hardware(){
     fi
 
     if [[ "${ROBOT_HARDWARE-}" == "raspberry_pi_64" ]]; then
-        rm /usr/lib/aarch64-linux-gnu/libdrm.so.2
-        ln -s /usr/lib/aarch64-linux-gnu/libdrm.so.2.4.0 /usr/lib/aarch64-linux-gnu/libdrm.so.2
+        if [ -f /usr/lib/aarch64-linux-gnu/libdrm.so.2.4.0 ]; then
+            rm /usr/lib/aarch64-linux-gnu/libdrm.so.2
+            ln -s /usr/lib/aarch64-linux-gnu/libdrm.so.2.4.0 /usr/lib/aarch64-linux-gnu/libdrm.so.2
+        fi
     fi
 }
 
