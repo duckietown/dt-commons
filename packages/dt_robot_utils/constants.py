@@ -1,6 +1,27 @@
 from enum import IntEnum
 
 
+class RobotHardware(IntEnum):
+    UNKNOWN = 0
+    RASPBERRY_PI = 1
+    RASPBERRY_PI_64 = 2
+    JETSON_NANO = 3
+    VIRTUAL = 90
+
+    @classmethod
+    def from_string(cls, rhardware: str) -> 'RobotHardware':
+        _from_string = {
+            '__NOTSET__': RobotHardware.UNKNOWN,
+            'raspberry_pi': RobotHardware.RASPBERRY_PI,
+            'raspberry_pi_64': RobotHardware.RASPBERRY_PI_64,
+            'jetson_nano': RobotHardware.JETSON_NANO,
+            'virtual': RobotHardware.VIRTUAL
+        }
+        if rhardware in _from_string:
+            return _from_string[rhardware]
+        return RobotHardware.UNKNOWN
+
+
 class RobotType(IntEnum):
     UNKNOWN = 0
     DUCKIEBOT = 1
@@ -54,6 +75,8 @@ class RobotConfiguration(IntEnum):
     WS21A = 70
     WS21B = 71
     WS21C = 72
+    # Duckiecam
+    DC21 = 80
 
     @classmethod
     def from_string(cls, name) -> 'RobotConfiguration':
