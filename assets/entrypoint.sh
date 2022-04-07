@@ -130,6 +130,35 @@ configure_vehicle(){
 }
 
 
+configure_hardware(){
+    # NVidia Jetson-based robots
+    if [ "${ROBOT_HARDWARE}" == "jetson_nano" ]; then
+        CUDA_VERSION=10.2
+
+        # configure nvidia drivers for Jetson Nano boards
+        mkdir -p /usr/share/egl/egl_external_platform.d/
+        echo '\
+        {\
+            "file_format_version" : "1.0.0",\
+            "ICD" : {\
+                "library_path" : "libnvidia-egl-wayland.so.1"\
+            }\
+        }' > /usr/share/egl/egl_external_platform.d/nvidia_wayland.json
+
+
+        if [ ! -f /etc/ld.so.conf.d/nvidia-tegra.conf ]; then
+            mkdir -p /etc/ld.so.conf.d/
+            touch /etc/ld.so.conf.d/nvidia-tegra.conf
+            echo "/usr/lib/aarch64-linux-gnu/tegra" >> /etc/ld.so.conf.d/nvidia-tegra.conf
+            echo "/usr/lib/aarch64-linux-gnu/tegra-egl" >> /etc/ld.so.conf.d/nvidia-tegra.conf
+            echo "/usr/local/cuda-${CUDA_VERSION}/targets/aarch64-linux/lib" >> /etc/ld.so.conf.d/nvidia.conf
+        fi
+
+        ldconfig
+    fi
+}
+
+
 configure_python(){
   # make the code discoverable by python
   for d in $(find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
@@ -210,8 +239,12 @@ configure_ROS(){
 
 
 # configure
-debug "=> Setting up vehicle configuration..."
+debug "=> Setting up vehicle..."
 configure_vehicle
+debug "<= Done!"
+
+debug "=> Setting up hardware..."
+configure_hardware
 debug "<= Done!"
 
 debug "=> Setting up PYTHONPATH..."
