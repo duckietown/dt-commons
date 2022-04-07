@@ -132,7 +132,7 @@ configure_vehicle(){
 
 configure_hardware(){
     # NVidia Jetson-based robots
-    if [ "${ROBOT_HARDWARE}" == "jetson_nano" ]; then
+    if [[ "${ROBOT_HARDWARE-}" == "jetson_nano" ]]; then
         CUDA_VERSION=10.2
 
         # configure nvidia drivers for Jetson Nano boards
@@ -155,6 +155,11 @@ configure_hardware(){
         fi
 
         ldconfig
+    fi
+
+    if [[ "${ROBOT_HARDWARE-}" == "raspberry_pi_64" ]]; then
+        rm /usr/lib/aarch64-linux-gnu/libdrm.so.2
+        ln -s /usr/lib/aarch64-linux-gnu/libdrm.so.2.4.0 /usr/lib/aarch64-linux-gnu/libdrm.so.2
     fi
 }
 
