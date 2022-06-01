@@ -20,8 +20,12 @@ export DT_MODULE_INSTANCE
 
 debug() {
     if [ "${DEBUG}" = "1" ]; then
-        echo "DEBUG: $1"
+        echo "  DEBUG: $1"
     fi
+}
+
+info() {
+    echo "   INFO: $1"
 }
 
 warning() {
@@ -29,7 +33,7 @@ warning() {
 }
 
 error() {
-    echo "ERROR: $1"
+    echo "  ERROR: $1"
 }
 
 is_nethost() {
@@ -43,7 +47,7 @@ configure_vehicle() {
     if [ ${#VEHICLE_NAME} -le 0 ]; then
         VEHICLE_NAME_IS_SET=0
         VEHICLE_NAME=$(hostname)
-        echo "The environment variable VEHICLE_NAME is not set. Using '${VEHICLE_NAME}'."
+        info "The environment variable VEHICLE_NAME is not set. Using '${VEHICLE_NAME}'."
     fi
     export VEHICLE_NAME="${VEHICLE_NAME}"
 
@@ -54,11 +58,11 @@ configure_vehicle() {
 
         # check optional arguments
         if [ ${#VEHICLE_IP} -ne 0 ]; then
-            echo "The environment variable VEHICLE_IP is set to '${VEHICLE_IP}'. Adding to /etc/hosts."
+            info "The environment variable VEHICLE_IP is set to '${VEHICLE_IP}'. Adding to /etc/hosts."
             {
                 echo "${VEHICLE_IP} ${VEHICLE_NAME} ${VEHICLE_NAME}.local" >>/etc/hosts
             } || {
-                echo "WARNING: Failed writing to /etc/hosts. Will continue anyway."
+                warning "Failed writing to /etc/hosts. Will continue anyway."
                 netwarnings=1
             }
         fi
@@ -69,7 +73,7 @@ configure_vehicle() {
             {
                 echo "127.0.0.1 localhost ${VEHICLE_NAME} ${VEHICLE_NAME}.local" >>/etc/hosts
             } || {
-                echo "WARNING: Failed writing to /etc/hosts. Will continue anyway."
+                warning "Failed writing to /etc/hosts. Will continue anyway."
                 netwarnings=1
             }
         fi
@@ -78,17 +82,17 @@ configure_vehicle() {
         {
             echo "127.0.0.1 localhost $(hostname) $(hostname).local" >>/etc/hosts
         } || {
-            echo "WARNING: Failed writing to /etc/hosts. Will continue anyway."
+            warning "Failed writing to /etc/hosts. Will continue anyway."
             netwarnings=1
         }
 
         if [ "${netwarnings}" -eq "1" ]; then
-            echo "Network configured (with warnings)."
+            info "Network configured (with warnings)."
         else
-            echo "Network configured successfully."
+            info "Network configured successfully."
         fi
     else
-        echo "WARNING: Running in unprivileged mode, container's network will not be configured."
+        warning "Running in unprivileged mode, container's network will not be configured."
     fi
 
     # robot_type
@@ -98,11 +102,11 @@ configure_vehicle() {
             debug "ROBOT_TYPE[${ROBOT_TYPE_FILE}]: '${ROBOT_TYPE}'"
             export ROBOT_TYPE
         else
-            echo "WARNING: robot_type file does not exist. Using 'duckiebot' as default type."
+            warning "robot_type file does not exist. Using 'duckiebot' as default type."
             export ROBOT_TYPE="duckiebot"
         fi
     else
-        echo "INFO: ROBOT_TYPE is externally set to '${ROBOT_TYPE}'."
+        info "ROBOT_TYPE is externally set to '${ROBOT_TYPE}'."
     fi
 
     # robot_configuration
@@ -112,11 +116,11 @@ configure_vehicle() {
             debug "ROBOT_CONFIGURATION[${ROBOT_CONFIGURATION_FILE}]: '${ROBOT_CONFIGURATION}'"
             export ROBOT_CONFIGURATION
         else
-            echo "WARNING: robot_configuration file does not exist."
+            warning "robot_configuration file does not exist."
             export ROBOT_CONFIGURATION="__NOTSET__"
         fi
     else
-        echo "INFO: ROBOT_CONFIGURATION is externally set to '${ROBOT_CONFIGURATION}'."
+        info "ROBOT_CONFIGURATION is externally set to '${ROBOT_CONFIGURATION}'."
     fi
 
     # robot_hardware
@@ -126,11 +130,11 @@ configure_vehicle() {
             debug "ROBOT_HARDWARE[${ROBOT_HARDWARE_FILE}]: '${ROBOT_HARDWARE}'"
             export ROBOT_HARDWARE
         else
-            echo "WARNING: robot_hardware file does not exist."
+            warning "robot_hardware file does not exist."
             export ROBOT_HARDWARE="__NOTSET__"
         fi
     else
-        echo "INFO: ROBOT_HARDWARE is externally set to '${ROBOT_HARDWARE}'."
+        info "ROBOT_HARDWARE is externally set to '${ROBOT_HARDWARE}'."
     fi
 }
 
@@ -190,21 +194,21 @@ configure_ROS() {
     ROS_MASTER_URI_IS_SET=0
     if [ -n "${ROS_MASTER_URI-}" ]; then
         ROS_MASTER_URI_IS_SET=1
-        echo "Forcing ROS_MASTER_URI=${ROS_MASTER_URI}"
+        info "Forcing ROS_MASTER_URI=${ROS_MASTER_URI}"
     fi
 
     # check if ROS_HOSTNAME is set
     ROS_HOSTNAME_IS_SET=0
     if [ -n "${ROS_HOSTNAME-}" ]; then
         ROS_HOSTNAME_IS_SET=1
-        echo "Forcing ROS_HOSTNAME=${ROS_HOSTNAME}"
+        info "Forcing ROS_HOSTNAME=${ROS_HOSTNAME}"
     fi
 
     # check if ROS_IP is set
     ROS_IP_IS_SET=0
     if [ -n "${ROS_IP-}" ]; then
         ROS_IP_IS_SET=1
-        echo "Forcing ROS_IP=${ROS_IP}"
+        info "Forcing ROS_IP=${ROS_IP}"
     fi
 
     # constants
