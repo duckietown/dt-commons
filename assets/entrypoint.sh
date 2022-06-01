@@ -241,10 +241,32 @@ configure_ROS() {
         fi
     fi
 
-  # configure ROS MASTER URI
-  if [ "${ROS_MASTER_URI_IS_SET}" -eq "0" ]; then
-    export ROS_MASTER_URI="http://${VEHICLE_NAME}.local:11311/"
-  fi
+    # configure ROS MASTER URI
+    if [ "${ROS_MASTER_URI_IS_SET}" -eq "0" ]; then
+        export ROS_MASTER_URI="http://${VEHICLE_NAME}.local:11311/"
+    fi
+}
+
+configure_workspaces() {
+    IFS="," read -ra USER_WORKSPACES <<< "${DT_USER_WORKSPACES:-}"
+    for USER_WS in "${USER_WORKSPACES[@]}"; do
+        if [ "${USER_WS}" == "" ]; then
+            continue
+        fi
+        USER_WS_DIR="${SOURCE_DIR}/${USER_WS}"
+        if [ -d "${USER_WS_DIR}" ]; then
+            debug "Analyzing workspace candidate '${USER_WS_DIR}'..."
+            USER_WS_SETUP_FILE="${USER_WS_DIR}/devel/setup.bash"
+            if [ -f "${USER_WS_SETUP_FILE}" ]; then
+                debug "Sourcing workspace '${USER_WS_DIR}'"
+                source "${USER_WS_SETUP_FILE}" --extend
+            else
+                warning "Workspace '${USER_WS}' is not built!"
+            fi
+        else
+            error "Workspace '${USER_WS}' not found!"
+        fi
+    done
 }
 
 # configure
@@ -262,6 +284,10 @@ debug "<= Done!"
 
 debug "=> Setting up ROS environment..."
 configure_ROS
+debug "<= Done!"
+
+debug "=> Setting up workspaces..."
+configure_workspaces
 debug "<= Done!"
 
 # mark this file as sourced
