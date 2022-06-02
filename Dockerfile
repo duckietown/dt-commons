@@ -70,6 +70,18 @@ RUN cd /tmp/ \
 COPY assets/setup/by-arch/${ARCH} /tmp/.setup-by-arch
 RUN /tmp/.setup-by-arch/setup.sh
 
+# create `duckie` user
+RUN addgroup --gid 1000 "duckie" && \
+    useradd \
+        --create-home \
+        --home-dir "/home/duckie" \
+        --comment "Duckietown User" \
+        --shell "/bin/bash" \
+        --password "aa26uhROPk6sA" \
+        --uid 1000 \
+        --gid 1000 \
+        "duckie"
+
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
 
