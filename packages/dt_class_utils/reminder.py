@@ -16,7 +16,7 @@ class DTReminder:
         if period is not None or frequency is not None:
             _period = _get_period(period, frequency)
         # ---
-        _is_time = (time.time() - self._last_execution) >= _period
+        _is_time = 0 < _period <= (time.time() - self._last_execution)
         if _is_time and not dry_run:
             self.reset()
         return _is_time
@@ -44,6 +44,6 @@ def _get_period(period=None, frequency=None):
             raise ValueError('Parameter `frequency` must be a number, got {:s} instead'.format(
                 str(type(frequency))
             ))
-        _period = 1.0 / frequency
+        _period = 1.0 / frequency if frequency > 0.0 else 0.0
     # ---
     return _period
