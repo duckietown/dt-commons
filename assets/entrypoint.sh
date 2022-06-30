@@ -257,12 +257,12 @@ configure_workspaces() {
         if [ "${USER_WS}" == "" ]; then
             continue
         fi
-        USER_WS_DIR="${SOURCE_DIR}/${USER_WS}"
-        if [ -d "${USER_WS_DIR}" ]; then
-            debug "Analyzing workspace candidate '${USER_WS_DIR}'..."
-            USER_WS_SETUP_FILE="${USER_WS_DIR}/devel/setup.bash"
+        WS_DIR="${USER_WS_DIR}/${USER_WS}"
+        if [ -d "${WS_DIR}" ]; then
+            debug "Analyzing workspace candidate '${WS_DIR}'..."
+            USER_WS_SETUP_FILE="${WS_DIR}/devel/setup.bash"
             if [ -f "${USER_WS_SETUP_FILE}" ]; then
-                debug "Sourcing workspace '${USER_WS_DIR}'"
+                debug "Sourcing workspace '${WS_DIR}'"
                 source "${USER_WS_SETUP_FILE}" --extend
             else
                 warning "Workspace '${USER_WS}' is not built!"
