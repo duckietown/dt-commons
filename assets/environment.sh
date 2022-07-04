@@ -3,6 +3,7 @@
 export DEBUG=1
 export ROS_HOME=/tmp
 export ROSCONSOLE_STDOUT_LINE_BUFFERED=1
+export TRAPPED_SIGNAL=0
 
 # if anything weird happens from now on, STOP
 set -e
@@ -14,6 +15,7 @@ fi
 
 dt-terminate() {
     # send SIGINT signal to monitored process
+    export TRAPPED_SIGNAL=1
     kill -INT $(pgrep -P $$) 2>/dev/null
 }
 
@@ -72,6 +74,7 @@ dt-exec-FG() {
     eval "stdbuf -o L ${cmd%&} 1>&2 "
 }
 
+# TODO(from A.Daniele): 'challenges' stuff this close to duckietown core, arghhh!!
 copy-ros-logs() {
     find /tmp/log  -type f  -name "*.log" -exec cp {} /challenges/challenge-solution-output \;
 }
