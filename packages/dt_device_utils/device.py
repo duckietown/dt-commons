@@ -51,6 +51,8 @@ def get_device_hardware_brand() -> DeviceHardwareBrand:
         return DeviceHardwareBrand.RASPBERRY_PI_64
     elif hw == 'jetson_nano':
         return DeviceHardwareBrand.JETSON_NANO
+    elif hw == 'virtual':
+        return DeviceHardwareBrand.VIRTUAL
     # ---
     return DeviceHardwareBrand.UNKNOWN
 
