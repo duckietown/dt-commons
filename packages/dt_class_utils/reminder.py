@@ -1,11 +1,13 @@
 import time
 
+INFTY = 99999999999
+
 
 class DTReminder:
 
-    def __init__(self, period=None, frequency=None):
+    def __init__(self, period=None, frequency=None, right_away: bool = False):
         self._period = _get_period(period, frequency)
-        self._last_execution = time.time()
+        self._last_execution = -INFTY if right_away else time.time()
 
     def reset(self):
         self._last_execution = time.time()
@@ -16,9 +18,11 @@ class DTReminder:
         if period is not None or frequency is not None:
             _period = _get_period(period, frequency)
         # ---
-        _is_time = 0 < _period <= (time.time() - self._last_execution)
+        _since_last = time.time() - self._last_execution
+        _is_time = _since_last >= _period
         if _is_time and not dry_run:
-            self.reset()
+            _residual = (_since_last - _period) if (self._last_execution >= 0) else 0
+            self._last_execution = time.time() - _residual
         return _is_time
 
 
@@ -44,6 +48,6 @@ def _get_period(period=None, frequency=None):
             raise ValueError('Parameter `frequency` must be a number, got {:s} instead'.format(
                 str(type(frequency))
             ))
-        _period = 1.0 / frequency if frequency > 0.0 else 0.0
+        _period = (1.0 / frequency) if (frequency > 0) else 0.0
     # ---
     return _period

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export DEBUG=1
 export ROS_HOME=/tmp
 export ROSCONSOLE_STDOUT_LINE_BUFFERED=1
 export TRAPPED_SIGNAL=0
