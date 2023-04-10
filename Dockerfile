@@ -130,5 +130,5 @@ LABEL org.duckietown.label.module.type="${REPO_NAME}" \
 
 # relax healthcheck to include ND as healthy state
 HEALTHCHECK \
-    --interval=5s \
+    --interval=30s \
     CMD cat /health && grep -q '^healthy\|ND$' /health
