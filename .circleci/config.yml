@@ -4,20 +4,20 @@ workflows:
   version: 2
   build:
     jobs:
-    - build-daffy-staging:
+    - build-ente-staging:
         context: pip-staging
         filters:
           branches:
-            only: /daffy-staging.*/
-    - build-daffy-prod:
+            only: /ente-staging.*/
+    - build-ente-prod:
         context: production
         filters:
           branches:
-            ignore: /daffy-staging.*/
+            ignore: /ente-staging.*/
 jobs:
   build_template: &build_template
     docker:
-    - image: ${DOCKER_REGISTRY}/duckietown/aido-submission-ci-test:daffy
+    - image: ${DOCKER_REGISTRY}/duckietown/aido-submission-ci-test:ente
       auth:
         username: $DOCKER_USERNAME
         password: $DOCKER_PASSWORD
@@ -52,12 +52,12 @@ jobs:
     - run:
         name: Pull the image
         command: |
-          dts devel pull --tag daffy
+          dts devel pull --tag ente
 
     - run:
         name: Build the docs
         command: |
-          dts devel docs build --tag daffy -f
+          dts devel docs build --tag ente -f
 
     - store_artifacts:
         path: html
@@ -73,5 +73,5 @@ jobs:
     - store_artifacts:
         path: html/package.tgz
         destination: out/package.tgz
-  build-daffy-prod: *build_template
-  build-daffy-staging: *build_template
+  build-ente-prod: *build_template
+  build-ente-staging: *build_template
