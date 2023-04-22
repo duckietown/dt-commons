@@ -21,9 +21,7 @@ i-am-not-root() {
 }
 
 # reset health
-if i-am-root; then
-    echo ND > /health
-fi
+echo ND > /health
 
 # get container ID
 DT_MODULE_INSTANCE=$(dt-get-container-id)
