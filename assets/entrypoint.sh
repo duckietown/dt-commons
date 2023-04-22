@@ -11,8 +11,19 @@ echo "==> Entrypoint"
 # if anything weird happens from now on, STOP
 set -e
 
+# utility functions
+i-am-root() {
+    [ "$EUID" -eq 0 ]
+}
+
+i-am-not-root() {
+    [ "$EUID" -ne 0 ]
+}
+
 # reset health
-echo ND >/health
+if i-am-root; then
+    echo ND > /health
+fi
 
 # get container ID
 DT_MODULE_INSTANCE=$(dt-get-container-id)
