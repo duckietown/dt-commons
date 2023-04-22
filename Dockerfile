@@ -128,7 +128,12 @@ LABEL org.duckietown.label.module.type="${REPO_NAME}" \
     org.duckietown.label.base.tag="${BASE_TAG}" \
     org.duckietown.label.maintainer="${MAINTAINER}"
 
-# relax healthcheck to include ND as healthy state
+# create health file
+RUN echo ND > /health &&  \
+    chmod 777 /health && \
+    sudo -u ${DT_USER_NAME} touch /health
+
+# define healthcheck
 HEALTHCHECK \
     --interval=30s \
     CMD cat /health && grep -q '^healthy\|ND$' /health
