@@ -262,6 +262,21 @@ configure_ROS() {
     fi
 }
 
+configure_user() {
+    # impersonate UID
+    if [ "${IMPERSONATE_UID:-}" != "" ]; then
+        echo "Impersonating user with UID: ${IMPERSONATE_UID}"
+        usermod -u ${IMPERSONATE_UID} ${DT_USER_NAME}
+        export DT_USER_UID=${IMPERSONATE_UID}
+    fi
+    # impersonate GID
+    if [ "${IMPERSONATE_GID:-}" != "" ]; then
+        echo "Impersonating group with GID: ${IMPERSONATE_GID}"
+        groupmod -g ${IMPERSONATE_GID} ${DT_USER_NAME}
+        export DT_GROUP_GID=${IMPERSONATE_GID}
+    fi
+}
+
 configure_workspaces() {
     IFS="," read -ra USER_WORKSPACES <<< "${DT_USER_WORKSPACES:-}"
     for USER_WS in "${USER_WORKSPACES[@]}"; do
@@ -284,18 +299,34 @@ configure_workspaces() {
     done
 }
 
-configure_user() {
-    # impersonate UID
-    if [ "${IMPERSONATE_UID:-}" != "" ]; then
-        echo "Impersonating user with UID: ${IMPERSONATE_UID}"
-        usermod -u ${IMPERSONATE_UID} ${DT_USER_NAME}
-        export DT_USER_UID=${IMPERSONATE_UID}
-    fi
-    # impersonate GID
-    if [ "${IMPERSONATE_GID:-}" != "" ]; then
-        echo "Impersonating group with GID: ${IMPERSONATE_GID}"
-        groupmod -g ${IMPERSONATE_GID} ${DT_USER_NAME}
-        export DT_GROUP_GID=${IMPERSONATE_GID}
+configure_entrypoint() {
+    # make the code discoverable by python
+    for d in $(find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
+        PKG_ENTRYPOINT_DIR="${d}/assets/entrypoint.d"
+        if [ -d "${PKG_ENTRYPOINT_DIR}" ]; then
+            debug " > Sourcing ${PKG_ENTRYPOINT_DIR}/"
+            for f in $(find "${PKG_ENTRYPOINT_DIR}" -mindepth 1 -maxdepth 1 -type f); do
+                debug "  > Sourcing ${f}"
+                source ${f}
+                debug "  < Sourced ${f}"
+            done
+            debug " > Sourced ${PKG_ENTRYPOINT_DIR}/"
+        fi
+    done
+    # make the code discoverable by python
+    if [ ${#CATKIN_WS_DIR} -gt 0 ] && [ -d "${CATKIN_WS_DIR}/src" ]; then
+        for d in $(find "${CATKIN_WS_DIR}/src" -mindepth 1 -maxdepth 1 -type d); do
+            PKG_ENTRYPOINT_DIR="${d}/assets/entrypoint.d"
+            if [ -d "${PKG_ENTRYPOINT_DIR}" ]; then
+                debug " > Sourcing ${PKG_ENTRYPOINT_DIR}/"
+                for f in $(find "${PKG_ENTRYPOINT_DIR}" -mindepth 1 -maxdepth 1 -type f); do
+                    debug "  > Sourcing ${f}"
+                    source ${f}
+                    debug "  < Sourced ${f}"
+                done
+                debug " > Sourced ${PKG_ENTRYPOINT_DIR}/"
+            fi
+        done
     fi
 }
 
@@ -322,6 +353,10 @@ debug "<= Done!"
 
 debug "=> Setting up workspaces..."
 configure_workspaces
+debug "<= Done!"
+
+debug "=> Setting up entrypoint..."
+configure_entrypoint
 debug "<= Done!"
 
 # mark this file as sourced
