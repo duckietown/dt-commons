@@ -6,6 +6,13 @@ ROBOT_TYPE_FILE=${CONFIG_DIR}/robot_type
 ROBOT_CONFIGURATION_FILE=${CONFIG_DIR}/robot_configuration
 ROBOT_HARDWARE_FILE=${CONFIG_DIR}/robot_hardware
 
+# locations where dtprojects are stored
+PROJECTS_LOCATIONS=("${SOURCE_DIR}")
+# add catkin src if it exists
+if [ ${#CATKIN_WS_DIR} -gt 0 ] && [ -d "${CATKIN_WS_DIR}/src" ]; then
+    PROJECTS_LOCATIONS[${#PROJECTS_LOCATIONS[@]}]="${CATKIN_WS_DIR}/src"
+fi
+
 echo "==> Entrypoint"
 
 # if anything weird happens from now on, STOP
@@ -29,20 +36,20 @@ export DT_MODULE_INSTANCE
 
 debug() {
     if [ "${DEBUG}" = "1" ]; then
-        echo "  DEBUG: $1"
+        echo -e "  DEBUG: $1"
     fi
 }
 
 info() {
-    echo "   INFO: $1"
+    echo -e "   INFO: $1"
 }
 
 warning() {
-    echo "WARNING: $1"
+    echo -e "WARNING: $1"
 }
 
 error() {
-    echo "  ERROR: $1"
+    echo -e "  ERROR: $1"
 }
 
 is_nethost() {
@@ -183,19 +190,14 @@ configure_hardware() {
 
 configure_python() {
     # make the code discoverable by python
-    for d in $(find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
-        if [ -d "${d}/packages" ]; then
-            debug " > Adding ${d}/packages to PYTHONPATH"
-            export PYTHONPATH="${d}/packages:${PYTHONPATH}"
-        fi
-    done
-    # make the code discoverable by python
-    if [ ${#CATKIN_WS_DIR} -gt 0 ] && [ -d "${CATKIN_WS_DIR}/src" ]; then
-        for d in $(find "${CATKIN_WS_DIR}/src" -mindepth 1 -maxdepth 1 -type d); do
-            debug " > Adding ${d}/packages to PYTHONPATH"
-            export PYTHONPATH="${d}/packages:${PYTHONPATH}"
+    for src in "${PROJECTS_LOCATIONS[@]}"; do
+        for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
+            if [ -d "${d}/packages" ]; then
+                debug " > Adding ${d}/packages to PYTHONPATH"
+                export PYTHONPATH="${d}/packages:${PYTHONPATH}"
+            fi
         done
-    fi
+    done
 }
 
 configure_ROS() {
@@ -223,7 +225,7 @@ configure_ROS() {
     # constants
     ROS_SETUP=(
         "/opt/ros/${ROS_DISTRO}/setup.bash"
-        "${SOURCE_DIR}/catkin_ws/devel/setup.bash"
+        "${CATKIN_WS_DIR-}/devel/setup.bash"
         "${SOURCE_DIR}/setup.bash"
     )
 
@@ -298,34 +300,21 @@ configure_workspaces() {
 }
 
 configure_entrypoint() {
-    # make the code discoverable by python
-    for d in $(find "${SOURCE_DIR}" -mindepth 1 -maxdepth 1 -type d); do
-        PKG_ENTRYPOINT_DIR="${d}/assets/entrypoint.d"
-        if [ -d "${PKG_ENTRYPOINT_DIR}" ]; then
-            debug " > Sourcing ${PKG_ENTRYPOINT_DIR}/"
-            for f in $(find "${PKG_ENTRYPOINT_DIR}" -mindepth 1 -maxdepth 1 -type f); do
-                debug "  > Sourcing ${f}"
-                source ${f}
-                debug "  < Sourced ${f}"
-            done
-            debug " > Sourced ${PKG_ENTRYPOINT_DIR}/"
-        fi
-    done
-    # make the code discoverable by python
-    if [ ${#CATKIN_WS_DIR} -gt 0 ] && [ -d "${CATKIN_WS_DIR}/src" ]; then
-        for d in $(find "${CATKIN_WS_DIR}/src" -mindepth 1 -maxdepth 1 -type d); do
-            PKG_ENTRYPOINT_DIR="${d}/assets/entrypoint.d"
-            if [ -d "${PKG_ENTRYPOINT_DIR}" ]; then
-                debug " > Sourcing ${PKG_ENTRYPOINT_DIR}/"
-                for f in $(find "${PKG_ENTRYPOINT_DIR}" -mindepth 1 -maxdepth 1 -type f); do
+    # source all the entrypoint scripts provided by the dtprojects
+    for src in "${PROJECTS_LOCATIONS[@]}"; do
+        for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
+            PROJECT_ENTRYPOINT_DIR="${d}/assets/entrypoint.d"
+            if [ -d "${PROJECT_ENTRYPOINT_DIR}" ]; then
+                debug " > Sourcing ${PROJECT_ENTRYPOINT_DIR}/"
+                for f in $(find "${PROJECT_ENTRYPOINT_DIR}" -mindepth 1 -maxdepth 1 -type f); do
                     debug "  > Sourcing ${f}"
                     source ${f}
                     debug "  < Sourced ${f}"
                 done
-                debug " > Sourced ${PKG_ENTRYPOINT_DIR}/"
+                debug " > Sourced ${PROJECT_ENTRYPOINT_DIR}/"
             fi
         done
-    fi
+    done
 }
 
 # configure
