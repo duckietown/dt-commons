@@ -317,6 +317,27 @@ configure_entrypoint() {
     done
 }
 
+configure_libraries() {
+    # superimpose libraries provided by the dtprojects
+    for src in "${PROJECTS_LOCATIONS[@]}"; do
+        for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
+            PROJECT_LIBRARIES_DIR="${d}/libraries"
+            if [ -d "${PROJECT_LIBRARIES_DIR}" ]; then
+                debug " > Analyzing ${PROJECT_LIBRARIES_DIR}/"
+                for lib in $(find "${PROJECT_LIBRARIES_DIR}" -mindepth 1 -maxdepth 1 -type d); do
+                    LIBRARY_SETUP_PY="${lib}/setup.py"
+                    if [ -f "${LIBRARY_SETUP_PY}" ]; then
+                        debug "  > Found library in ${lib}"
+                        python3 -m pip install -e "${lib}" > /dev/null
+                        info "  < Loaded library: $(basename ${lib})\t(from: ${lib})"
+                    fi
+                done
+                debug " > Analyzed ${PROJECT_LIBRARIES_DIR}/"
+            fi
+        done
+    done
+}
+
 # configure
 debug "=> Setting up robot..."
 configure_vehicle
@@ -340,6 +361,10 @@ debug "<= Done!"
 
 debug "=> Setting up workspaces..."
 configure_workspaces
+debug "<= Done!"
+
+debug "=> Setting up libraries..."
+configure_libraries
 debug "<= Done!"
 
 debug "=> Setting up entrypoint..."
