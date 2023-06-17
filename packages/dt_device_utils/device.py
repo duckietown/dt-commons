@@ -4,7 +4,8 @@ import logging
 import netifaces
 import requests
 
-from .constants import DeviceHardwareBrand, DEVICE_ID_IFACE
+from dt_robot_utils import RobotHardware, get_robot_hardware
+from .constants import DeviceHardwareBrand, DEVICE_ID_IFACE, STATS_DIR
 
 # create logger
 logging.basicConfig()
@@ -15,19 +16,28 @@ if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']
 
 
 def get_device_id() -> str:
-    try:
-        addresses = netifaces.ifaddresses(DEVICE_ID_IFACE)
-    except ValueError:
-        msg = f"Network interface '{DEVICE_ID_IFACE}' not found. Device ID cannot be computed."
-        logger.error(msg)
-        raise ValueError(msg)
-    # read MAC address
-    try:
-        mac = addresses[netifaces.AF_LINK][0]['addr']
-    except KeyError:
-        msg = f"No MAC address found on '{DEVICE_ID_IFACE}'. Cannot compute unique device ID."
-        logger.error(msg)
-        raise ValueError(msg)
+    hw: RobotHardware = get_robot_hardware()
+    if hw is RobotHardware.VIRTUAL:
+        # virtual robots do not use network interfaces to figure out their ID but a generated random MAC
+        eth0_mac_fpath: str = os.path.join(STATS_DIR, "MAC", "eth0")
+        if not os.path.exists(eth0_mac_fpath):
+            raise FileNotFoundError(f"Device ID file '{eth0_mac_fpath}' not found.")
+        with open(eth0_mac_fpath, "rt") as fin:
+            mac = fin.read()
+    else:
+        try:
+            addresses = netifaces.ifaddresses(DEVICE_ID_IFACE)
+        except ValueError:
+            msg = f"Network interface '{DEVICE_ID_IFACE}' not found. Device ID cannot be computed."
+            logger.error(msg)
+            raise ValueError(msg)
+        # read MAC address
+        try:
+            mac = addresses[netifaces.AF_LINK][0]['addr']
+        except KeyError:
+            msg = f"No MAC address found on '{DEVICE_ID_IFACE}'. Cannot compute unique device ID."
+            logger.error(msg)
+            raise ValueError(msg)
     # turn MAC into a unique ID
     device_id = mac.replace(':', '').strip()
     # make sure we have a valid MAC address

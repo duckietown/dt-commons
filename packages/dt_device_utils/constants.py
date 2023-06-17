@@ -2,6 +2,7 @@ from enum import IntEnum
 
 CONFIG_DIR = "/data/config/"
 DEVICE_ID_IFACE = "eth0"
+STATS_DIR = "/data/stats"
 
 
 class DeviceHardwareBrand(IntEnum):
