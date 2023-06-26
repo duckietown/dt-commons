@@ -1,0 +1,14 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+    - caption: Inter-robot Communication
+      maxdepth: 2
+      numbered: False
+      chapters:
+          - file: inter-robot-communication/index.rst
+          - file: inter-robot-communication/dt_communication_utils.rst
+            sections:
+                - file: inter-robot-communication/troubleshooting.rst

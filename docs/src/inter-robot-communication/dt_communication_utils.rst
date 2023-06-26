@@ -1,30 +1,15 @@
-Python Package: dt_communication_utils
-======================================
+Package ``dt_communication_utils``
+==================================
 
 The `dt_communication_utils` package provides utility classes to implement simple
 communication between robots in Duckietown.
-
-
-.. contents::
-
-
-Introduction
-------------
-
-Duckietown employs ROS (Robot Operating System) as its main intra-device communication
-framework. Given the dependency on a predefined (always reachable) ROS Master node, ROS
-does not fit the needs of a fully-distributed multi-robot communication infrastructure.
-For this reason, Duckietown employs LCM (Lightweight Communications and Marshalling).
-LCM is a library that provides a fully-distributed communication framework for processes
-within a local network. While ROS transports data using the TCP protocol, LCM uses UDP
-Multicast.
+It wraps around LCM and hides all the networking details from
+the user.
 
 
 Groups and Subgroups
 --------------------
 
-The `dt_communication_utils` wraps around LCM and hides all the networking details from
-the user.
 Communication between processes within a local network happens within
 **Communication Groups** and **Subgroups**.
 A communication group is a logical group that processes can easily join.
@@ -102,7 +87,7 @@ to receive a message from the same group.
     subscriber = group.Subscriber(callback)
 
 
-..  include:: dt_communication_utils/troubleshooting.rst
+..  include:: troubleshooting.rst
 
 
 Python Classes
