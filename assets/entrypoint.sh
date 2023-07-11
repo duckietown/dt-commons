@@ -328,7 +328,7 @@ configure_libraries() {
                     LIBRARY_SETUP_PY="${lib}/setup.py"
                     if [ -f "${LIBRARY_SETUP_PY}" ]; then
                         debug "  > Found library in ${lib}"
-                        python3 -m pip install -e "${lib}" > /dev/null
+                        python3 -m pip install --no-dependencies -e "${lib}" > /dev/null
                         info "  < Loaded library: $(basename ${lib})\t(from: ${lib})"
                     fi
                 done
