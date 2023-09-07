@@ -73,10 +73,6 @@ RUN cd /tmp/ \
     && cd ~ \
     && rm -rf /tmp/lcm
 
-# configure arch-specific environment
-COPY assets/setup/${TARGETPLATFORM}/setup.sh /tmp/setup-by-arch.sh
-RUN /tmp/setup-by-arch.sh
-
 # create `duckie` user
 RUN addgroup --gid ${DT_GROUP_GID} "${DT_GROUP_NAME}" && \
     useradd \
@@ -89,18 +85,19 @@ RUN addgroup --gid ${DT_GROUP_GID} "${DT_GROUP_NAME}" && \
         --gid ${DT_GROUP_GID} \
         "${DT_USER_NAME}"
 
+# copy the assets (needed by sibling images)
+COPY ./assets "${REPO_PATH}/assets"
+
+# configure arch-specific environment
+RUN ${REPO_PATH}/assets/setup/${TARGETPLATFORM}/setup.sh
+
+# install assets
+RUN cp ${REPO_PATH}/assets/bin/* /usr/local/bin/ && \
+    cp ${REPO_PATH}/assets/entrypoint.sh /entrypoint.sh && \
+    cp ${REPO_PATH}/assets/environment.sh /environment.sh
+
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
-
-# copy binaries
-COPY ./assets/bin/. /usr/local/bin/
-
-# copy environment / entrypoint
-COPY assets/entrypoint.sh /entrypoint.sh
-COPY assets/environment.sh /environment.sh
-
-# copy code setup script
-COPY assets/code/setup.bash /code/setup.bash
 
 # source environment on every bash session
 RUN echo "source /environment.sh" >> ~/.bashrc
