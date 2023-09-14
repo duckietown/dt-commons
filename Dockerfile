@@ -1,28 +1,35 @@
 # parameters
-ARG REPO_NAME="dt-commons"
-ARG MAINTAINER="Andrea F. Daniele (afdaniele@duckietown.com)"
-ARG DESCRIPTION="Base image containing common libraries and environment setup for non-ROS applications."
-ARG ICON="square"
+ARG PROJECT_NAME
+ARG PROJECT_DESCRIPTION
+ARG PROJECT_MAINTAINER
+# pick an icon from: https://fontawesome.com/v4.7.0/icons/
+ARG PROJECT_ICON="cube"
+ARG PROJECT_FORMAT_VERSION
 
+# ==================================================>
+# ==> Do not change the code below this line
 ARG ARCH
-ARG DISTRO=ente
-ARG DOCKER_REGISTRY=docker.io
-ARG BASE_IMAGE=dt-base-environment
+ARG DISTRO
+ARG DOCKER_REGISTRY
+ARG BASE_REPOSITORY
+ARG BASE_ORGANIZATION=duckietown
 ARG BASE_TAG=${DISTRO}-${ARCH}
 ARG LAUNCHER=default
 
 # define base image
-FROM ${DOCKER_REGISTRY}/duckietown/${BASE_IMAGE}:${BASE_TAG} as base
+FROM ${DOCKER_REGISTRY}/${BASE_ORGANIZATION}/${BASE_REPOSITORY}:${BASE_TAG} as base
 
 # recall all arguments
-ARG REPO_NAME
-ARG DESCRIPTION
-ARG MAINTAINER
-ARG ICON
+ARG ARCH
 ARG DISTRO
-ARG OS_DISTRO
+ARG PROJECT_NAME
+ARG PROJECT_DESCRIPTION
+ARG PROJECT_MAINTAINER
+ARG PROJECT_ICON
+ARG PROJECT_FORMAT_VERSION
 ARG BASE_TAG
-ARG BASE_IMAGE
+ARG BASE_REPOSITORY
+ARG BASE_ORGANIZATION
 ARG LAUNCHER
 # - buildkit
 ARG TARGETPLATFORM
@@ -30,19 +37,32 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 
-# define and create repository path
-ARG REPO_PATH="${SOURCE_DIR}/${REPO_NAME}"
-ARG LAUNCH_PATH="${LAUNCH_DIR}/${REPO_NAME}"
-RUN mkdir -p "${REPO_PATH}" "${LAUNCH_PATH}"
-WORKDIR "${REPO_PATH}"
+# check build arguments
+RUN dt-args-check \
+    "PROJECT_NAME" "${PROJECT_NAME}" \
+    "PROJECT_DESCRIPTION" "${PROJECT_DESCRIPTION}" \
+    "PROJECT_MAINTAINER" "${PROJECT_MAINTAINER}" \
+    "PROJECT_ICON" "${PROJECT_ICON}" \
+    "PROJECT_FORMAT_VERSION" "${PROJECT_FORMAT_VERSION}" \
+    "ARCH" "${ARCH}" \
+    "DISTRO" "${DISTRO}" \
+    "DOCKER_REGISTRY" "${DOCKER_REGISTRY}" \
+    "BASE_REPOSITORY" "${BASE_REPOSITORY}"
+RUN dt-check-project-format "${PROJECT_FORMAT_VERSION}"
+
+# define/create repository path
+ARG PROJECT_PATH="${SOURCE_DIR}/${PROJECT_NAME}"
+ARG PROJECT_LAUNCHERS_PATH="${LAUNCHERS_DIR}/${PROJECT_NAME}"
+RUN mkdir -p "${PROJECT_PATH}" "${PROJECT_LAUNCHERS_PATH}"
+WORKDIR "${PROJECT_PATH}"
 
 # keep some arguments as environment variables
-ENV DT_MODULE_TYPE="${REPO_NAME}" \
-    DT_MODULE_DESCRIPTION="${DESCRIPTION}" \
-    DT_MODULE_ICON="${ICON}" \
-    DT_MAINTAINER="${MAINTAINER}" \
-    DT_REPO_PATH="${REPO_PATH}" \
-    DT_LAUNCH_PATH="${LAUNCH_PATH}" \
+ENV DT_PROJECT_NAME="${PROJECT_NAME}" \
+    DT_PROJECT_DESCRIPTION="${PROJECT_DESCRIPTION}" \
+    DT_PROJECT_MAINTAINER="${PROJECT_MAINTAINER}" \
+    DT_PROJECT_ICON="${PROJECT_ICON}" \
+    DT_PROJECT_PATH="${PROJECT_PATH}" \
+    DT_PROJECT_LAUNCHERS_PATH="${PROJECT_LAUNCHERS_PATH}" \
     DT_LAUNCHER="${LAUNCHER}"
 
 # duckie user
@@ -53,14 +73,14 @@ ENV DT_USER_NAME="duckie" \
     DT_USER_HOME="/home/duckie"
 
 # install apt dependencies
-COPY ./dependencies-apt.txt "${REPO_PATH}/"
-RUN dt-apt-install "${REPO_PATH}/dependencies-apt.txt"
+COPY ./dependencies-apt.txt "${PROJECT_PATH}/"
+RUN dt-apt-install ${PROJECT_PATH}/dependencies-apt.txt
 
-# install python dependencies
-ARG PIP_INDEX_URL="https://pypi.org/simple/"
+# install python3 dependencies
+ARG PIP_INDEX_URL="https://pypi.org/simple"
 ENV PIP_INDEX_URL=${PIP_INDEX_URL}
-COPY ./dependencies-py3.* "${REPO_PATH}/"
-RUN python3 -m pip install -U -r ${REPO_PATH}/dependencies-py3.txt
+COPY ./dependencies-py3.* "${PROJECT_PATH}/"
+RUN dt-pip3-install "${PROJECT_PATH}/dependencies-py3.*"
 
 # install LCM
 RUN cd /tmp/ \
@@ -86,18 +106,18 @@ RUN addgroup --gid ${DT_GROUP_GID} "${DT_GROUP_NAME}" && \
         "${DT_USER_NAME}"
 
 # copy the assets (needed by sibling images)
-COPY ./assets "${REPO_PATH}/assets"
+COPY ./assets "${PROJECT_PATH}/assets"
 
 # configure arch-specific environment
-RUN ${REPO_PATH}/assets/setup/${TARGETPLATFORM}/setup.sh
+RUN ${PROJECT_PATH}/assets/setup/${TARGETPLATFORM}/setup.sh
 
 # install assets
-RUN cp ${REPO_PATH}/assets/bin/* /usr/local/bin/ && \
-    cp ${REPO_PATH}/assets/entrypoint.sh /entrypoint.sh && \
-    cp ${REPO_PATH}/assets/environment.sh /environment.sh
+RUN cp ${PROJECT_PATH}/assets/bin/* /usr/local/bin/ && \
+    cp ${PROJECT_PATH}/assets/entrypoint.sh /entrypoint.sh && \
+    cp ${PROJECT_PATH}/assets/environment.sh /environment.sh
 
 # copy the source code
-COPY ./packages "${REPO_PATH}/packages"
+COPY ./packages "${PROJECT_PATH}/packages"
 
 # source environment on every bash session
 RUN echo "source /environment.sh" >> ~/.bashrc
@@ -106,24 +126,8 @@ RUN echo "source /environment.sh" >> ~/.bashrc
 ENTRYPOINT ["/entrypoint.sh"]
 
 # install launcher scripts
-COPY ./launchers/. "${LAUNCH_PATH}/"
-RUN dt-install-launchers "${LAUNCH_PATH}"
-
-# define default command
-CMD ["bash", "-c", "dt-launcher-${DT_LAUNCHER}"]
-
-# store module metadata
-LABEL org.duckietown.label.module.type="${REPO_NAME}" \
-    org.duckietown.label.module.description="${DESCRIPTION}" \
-    org.duckietown.label.module.icon="${ICON}" \
-    org.duckietown.label.platform.os="${TARGETOS}" \
-    org.duckietown.label.platform.architecture="${TARGETARCH}" \
-    org.duckietown.label.platform.variant="${TARGETVARIANT}" \
-    org.duckietown.label.code.location="${REPO_PATH}" \
-    org.duckietown.label.code.version.distro="${DISTRO}" \
-    org.duckietown.label.base.image="${BASE_IMAGE}" \
-    org.duckietown.label.base.tag="${BASE_TAG}" \
-    org.duckietown.label.maintainer="${MAINTAINER}"
+COPY ./launchers/. "${PROJECT_LAUNCHERS_PATH}/"
+RUN dt-install-launchers "${PROJECT_LAUNCHERS_PATH}"
 
 # create health file
 RUN echo ND > /health &&  \
@@ -134,3 +138,32 @@ RUN echo ND > /health &&  \
 HEALTHCHECK \
     --interval=30s \
     CMD cat /health && grep -q '^healthy\|ND$' /health
+
+# define default command
+CMD ["bash", "-c", "dt-launcher-${DT_LAUNCHER}"]
+
+# store module metadata
+LABEL \
+    # module info
+    org.duckietown.label.project.name="${PROJECT_NAME}" \
+    org.duckietown.label.project.description="${PROJECT_DESCRIPTION}" \
+    org.duckietown.label.project.maintainer="${PROJECT_MAINTAINER}" \
+    org.duckietown.label.project.icon="${PROJECT_ICON}" \
+    org.duckietown.label.project.path="${PROJECT_PATH}" \
+    org.duckietown.label.project.launchers.path="${PROJECT_LAUNCHERS_PATH}" \
+    # format
+    org.duckietown.label.format.version="${PROJECT_FORMAT_VERSION}" \
+    # platform info
+    org.duckietown.label.platform.os="${TARGETOS}" \
+    org.duckietown.label.platform.architecture="${TARGETARCH}" \
+    org.duckietown.label.platform.variant="${TARGETVARIANT}" \
+    # code info
+    org.duckietown.label.code.distro="${DISTRO}" \
+    org.duckietown.label.code.launcher="${LAUNCHER}" \
+    org.duckietown.label.code.python.registry="${PIP_INDEX_URL}" \
+    # base info
+    org.duckietown.label.base.organization="${BASE_ORGANIZATION}" \
+    org.duckietown.label.base.repository="${BASE_REPOSITORY}" \
+    org.duckietown.label.base.tag="${BASE_TAG}"
+# <== Do not change the code above this line
+# <==================================================
