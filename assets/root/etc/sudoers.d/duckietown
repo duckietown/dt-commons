@@ -1,0 +1,5 @@
+# allow sudo to keep the environment variables PYTHONPATH and PATH
+Defaults env_keep += "PYTHONPATH PATH"
+
+# allow user 'duckie' to run sudo without password prompt
+duckie ALL=(ALL:ALL) NOPASSWD: ALL

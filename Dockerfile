@@ -125,7 +125,7 @@ RUN cp ${PROJECT_PATH}/assets/bin/* /usr/local/bin/ && \
 COPY ./packages "${PROJECT_PATH}/packages"
 
 # source environment on every bash session
-RUN echo "source /environment.sh" >> ~/.bashrc
+RUN echo "source /environment.sh" >> /etc/bash.bashrc
 
 # configure entrypoint
 ENTRYPOINT ["/entrypoint.sh"]
