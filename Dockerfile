@@ -110,6 +110,9 @@ RUN addgroup --gid ${DT_GROUP_GID} "${DT_GROUP_NAME}" && \
 # copy the assets (needed by sibling images)
 COPY ./assets "${PROJECT_PATH}/assets"
 
+# copy image root
+COPY ./assets/root/. /
+
 # configure arch-specific environment
 RUN ${PROJECT_PATH}/assets/setup/${TARGETPLATFORM}/setup.sh
 
