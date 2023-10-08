@@ -323,7 +323,15 @@ fi
 # reuse DT_LAUNCHER as CMD if the var is set and the first argument is `--`
 if [ ${#DT_LAUNCHER} -gt 0 ] && [ "$1" == "--" ]; then
     shift
-    exec sudo -E -u ${DT_USER_NAME} bash -c "dt-launcher-$DT_LAUNCHER $*"
+    if [[ "${DT_SUPERUSER:-0}" == "1" ]]; then
+        exec bash -c "dt-launcher-$DT_LAUNCHER $*"
+    else
+        exec sudo -E -u ${DT_USER_NAME} bash -c "dt-launcher-$DT_LAUNCHER $*"
+    fi
 else
-    exec sudo -E -u ${DT_USER_NAME} "$@"
+    if [[ "${DT_SUPERUSER:-0}" == "1" ]]; then
+        exec "$@"
+    else
+        exec sudo -E -u ${DT_USER_NAME} "$@"
+    fi
 fi
