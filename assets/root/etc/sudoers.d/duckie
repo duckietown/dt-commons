@@ -1,0 +1,2 @@
+# allow user 'duckie' to run sudo without password prompt
+duckie ALL=(ALL:ALL) NOPASSWD: ALL

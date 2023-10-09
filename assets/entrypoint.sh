@@ -326,12 +326,12 @@ if [ ${#DT_LAUNCHER} -gt 0 ] && [ "$1" == "--" ]; then
     if [[ "${DT_SUPERUSER:-0}" == "1" ]]; then
         exec bash -c "dt-launcher-$DT_LAUNCHER $*"
     else
-        exec sudo -E -u ${DT_USER_NAME} bash -c "dt-launcher-$DT_LAUNCHER $*"
+        exec sudo --set-home --preserve-env --user ${DT_USER_NAME} PYTHONPATH=$PYTHONPATH PATH=$PATH bash -c "dt-launcher-$DT_LAUNCHER $*"
     fi
 else
     if [[ "${DT_SUPERUSER:-0}" == "1" ]]; then
         exec "$@"
     else
-        exec sudo -E -u ${DT_USER_NAME} "$@"
+        exec sudo --set-home --preserve-env --user ${DT_USER_NAME} PYTHONPATH=$PYTHONPATH PATH=$PATH "$@"
     fi
 fi
