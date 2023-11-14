@@ -3,14 +3,14 @@
 
 
 # these are for service registration and discovery
-zeroconf
-netifaces
+zeroconf==0.126.0
+netifaces==0.11.0
 
 # these are for various APIs
-flask
-flask-cors
-requests
+Flask==3.0.0
+Flask-Cors==4.0.0
+requests==2.31.0
 
 # these are needed to support virtual robots
-cbor2
-pyzmq
+cbor2==5.5.1
+pyzmq==25.1.1
