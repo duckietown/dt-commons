@@ -210,7 +210,7 @@ configure_user() {
     # impersonate GID
     if [ "${IMPERSONATE_GID:-}" != "" ]; then
         echo "Impersonating group with GID: ${IMPERSONATE_GID}"
-        groupmod -g ${IMPERSONATE_GID} ${DT_USER_NAME}
+        groupmod -g ${IMPERSONATE_GID} ${DT_USER_NAME} || :
         export DT_GROUP_GID=${IMPERSONATE_GID}
     fi
 }
