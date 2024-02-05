@@ -17,21 +17,21 @@ class DTProcess(object):
             print('ERROR: You are trying to create two instances of type DTProcess. '
                   'This is not allowed, only one instance is allowed per process.')
             exit(1)
-        self._status = AppStatus.INITIALIZING
-        self._sigint_counter = 0
-        self._app_name = type(self).__name__ if not name else name
+        self._status: AppStatus = AppStatus.INITIALIZING
+        self._sigint_counter: int = 0
+        self._app_name: str = type(self).__name__ if not name else name
         self._shutdown_cbs = []
         signal.signal(signal.SIGINT, self._on_sigint)
         # define logger
         logging.basicConfig()
-        self.logger = logging.getLogger(self._app_name)
+        self.logger: logging.Logger = logging.getLogger(self._app_name)
         self.logger.setLevel(logging.INFO)
-        self._is_debug = False
+        self._is_debug: bool = False
         if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']:
             self.logger.setLevel(logging.DEBUG)
             self._is_debug = True
-        self._start_time = time.time()
-        self.status = AppStatus.RUNNING
+        self._start_time: float = time.time()
+        self.status: AppStatus = AppStatus.RUNNING
         # store singleton
         DTProcess.__instance__ = self
 
