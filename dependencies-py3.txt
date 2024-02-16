@@ -19,7 +19,14 @@ requests<=2.31.0
 cbor2<=5.5.1
 pyzmq<=25.1.1
 
-# dataclass utils
+# dataclass serialization/deserialization utils
 dataclasses-json<=0.6.4
 
+# JSON schema validation tool
 jsonschema<=4.21.1
+
+# openCV
+opencv-python-headless<=4.8.1.78
+
+# NumPy
+numpy<=1.20.0
