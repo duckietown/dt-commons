@@ -83,18 +83,6 @@ ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 COPY ./dependencies-py3.* "${PROJECT_PATH}/"
 RUN dt-pip3-install "${PROJECT_PATH}/dependencies-py3.*"
 
-# install LCM
-ENV LCM_VERSION="1.5.0"
-RUN cd /tmp/ \
-    && git clone -b "v${LCM_VERSION}" https://github.com/lcm-proj/lcm \
-    && mkdir -p lcm/build \
-    && cd lcm/build \
-    && cmake .. \
-    && make \
-    && make install \
-    && cd ~ \
-    && rm -rf /tmp/lcm
-
 # create `duckie` user
 RUN addgroup --gid ${DT_GROUP_GID} "${DT_GROUP_NAME}" && \
     useradd \
