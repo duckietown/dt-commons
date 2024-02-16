@@ -1,0 +1,3 @@
+[submodule "libraries/lib-dtps-http"]
+	path = libraries/lib-dtps-http
+	url = git@github.com:duckietown/lib-dtps-http

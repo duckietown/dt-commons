@@ -3,16 +3,19 @@ import sys
 import time
 import logging
 import signal
+from typing import List, Callable, Tuple
 
 from .app_status import AppStatus
 from dt_module_utils import set_module_healthy
+
+Args, KWargs = Tuple, dict
 
 
 class DTProcess(object):
 
     __instance__ = None
 
-    def __init__(self, name=None):
+    def __init__(self, name: str, catch_signals: bool = True):
         if DTProcess.__instance__ is not None:
             print('ERROR: You are trying to create two instances of type DTProcess. '
                   'This is not allowed, only one instance is allowed per process.')
@@ -20,20 +23,27 @@ class DTProcess(object):
         self._status: AppStatus = AppStatus.INITIALIZING
         self._sigint_counter: int = 0
         self._app_name: str = type(self).__name__ if not name else name
-        self._shutdown_cbs = []
-        signal.signal(signal.SIGINT, self._on_sigint)
+        self._shutdown_cbs: List[Tuple[Callable, Args, KWargs]] = []
+        self._catch_signals: bool = catch_signals
+        self._is_debug: bool = False
+        self._start_time: float = time.time()
         # define logger
         logging.basicConfig()
         self.logger: logging.Logger = logging.getLogger(self._app_name)
         self.logger.setLevel(logging.INFO)
-        self._is_debug: bool = False
         if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']:
             self.logger.setLevel(logging.DEBUG)
             self._is_debug = True
-        self._start_time: float = time.time()
-        self.status: AppStatus = AppStatus.RUNNING
+        # register signal handlers
+        if self._catch_signals:
+            signal.signal(signal.SIGINT, self._on_sigint)
         # store singleton
         DTProcess.__instance__ = self
+        self.status: AppStatus = AppStatus.RUNNING
+
+    @staticmethod
+    def get_instance() -> 'DTProcess':
+        return DTProcess.__instance__
 
     @property
     def status(self):
@@ -43,16 +53,15 @@ class DTProcess(object):
     def is_debug(self):
         return self._is_debug
 
-    @staticmethod
-    def get_instance() -> 'DTProcess':
-        return DTProcess.__instance__
-
+    @property
     def start_time(self):
         return self._start_time
 
+    @property
     def uptime(self):
         return time.time() - self._start_time
 
+    @property
     def name(self):
         return self._app_name
 
@@ -84,6 +93,8 @@ class DTProcess(object):
         sys.exit(-1000)
 
     def register_shutdown_callback(self, cb, *args, **kwargs):
+        if not self._catch_signals:
+            raise ValueError('Cannot register shutdown callback if signal catching is disabled.')
         if callable(cb):
             self._shutdown_cbs.append((cb, args, kwargs))
 

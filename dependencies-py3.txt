@@ -18,3 +18,8 @@ requests<=2.31.0
 # these are needed to support virtual robots
 cbor2<=5.5.1
 pyzmq<=25.1.1
+
+# dataclass utils
+dataclasses-json<=0.6.4
+
+jsonschema

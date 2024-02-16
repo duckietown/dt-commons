@@ -125,8 +125,7 @@ RUN cp ${PROJECT_PATH}/assets/bin/* /usr/local/bin/ && \
 COPY ./packages "${PROJECT_PATH}/packages"
 
 # build packages
-RUN cd ${WORKSPACE_DIR} && \
-    colcon build --symlink-install
+RUN dt-colcon-build ${WORKSPACE_DIR}
 
 # source environment on every bash session
 RUN echo "source /environment.sh" >> /etc/bash.bashrc

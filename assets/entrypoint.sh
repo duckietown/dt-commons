@@ -257,6 +257,7 @@ configure_entrypoint() {
 }
 
 configure_libraries() {
+    git config --global --add safe.directory '*'
     # superimpose libraries provided by the dtprojects
     for src in "${PROJECTS_LOCATIONS[@]}"; do
         for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
@@ -265,7 +266,8 @@ configure_libraries() {
                 debug " > Analyzing ${PROJECT_LIBRARIES_DIR}/"
                 for lib in $(find "${PROJECT_LIBRARIES_DIR}" -mindepth 1 -maxdepth 1 -type d); do
                     LIBRARY_SETUP_PY="${lib}/setup.py"
-                    if [ -f "${LIBRARY_SETUP_PY}" ]; then
+                    LIBRARY_PYPROJECT_TOML="${lib}/pyproject.toml"
+                    if [ -f "${LIBRARY_SETUP_PY}" ] || [ -f "${LIBRARY_PYPROJECT_TOML}" ]; then
                         debug "  > Found library in ${lib}"
                         python3 -m pip install --no-dependencies -e "${lib}" > /dev/null
                         info "  < Loaded library: $(basename ${lib})\t(from: ${lib})"
