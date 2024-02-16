@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import os
+from abc import abstractmethod
 from typing import Optional
 
 from dt_robot_utils import get_robot_name
@@ -151,6 +152,7 @@ class Node(DTProcess):
     async def dtps_expose(self):
         await self.switchboard.navigate("nodes", self.name).expose(self.context)
 
+    @abstractmethod
     async def worker(self):
         raise NotImplementedError("Method 'worker' must be implemented by the final node class.")
 
