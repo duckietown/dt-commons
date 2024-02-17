@@ -260,6 +260,7 @@ configure_libraries() {
     if [ "${DT_NO_LIBRARIES:-0}" == "1" ]; then
         info "Skipping library loading."
         return
+    fi
     # avoid git dubious ownership check
     git config --global --add safe.directory '*'
     # superimpose libraries provided by the dtprojects
