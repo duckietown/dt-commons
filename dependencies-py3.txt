@@ -25,8 +25,5 @@ dataclasses-json<=0.6.4
 # JSON schema validation tool
 jsonschema<=4.21.1
 
-# openCV
-opencv-python-headless<=4.8.1.78
-
 # NumPy
 numpy<=1.26.2

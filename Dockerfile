@@ -73,6 +73,10 @@ ENV DT_USER_NAME="duckie" \
     DT_GROUP_GID=2222 \
     DT_USER_HOME="/home/duckie"
 
+# install opencv
+COPY ./assets/opencv/${TARGETARCH} /tmp/opencv
+RUN /tmp/opencv/install.sh
+
 # install apt dependencies
 COPY ./dependencies-apt.txt "${PROJECT_PATH}/"
 RUN dt-apt-install ${PROJECT_PATH}/dependencies-apt.txt
