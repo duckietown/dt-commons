@@ -78,13 +78,14 @@ class DTProcess(object):
         if status == AppStatus.RUNNING:
             set_module_healthy()
 
+    @property
     def is_shutdown(self):
         return self._status == AppStatus.TERMINATING
 
     def shutdown(self, reason: str = None):
         if reason:
             self.logger.info('Shutdown requested: %s' % reason)
-        if self.is_shutdown():
+        if self.is_shutdown:
             return
         self._status = AppStatus.TERMINATING
         for cb, args, kwargs in self._shutdown_cbs:
