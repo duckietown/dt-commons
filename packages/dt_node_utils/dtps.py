@@ -24,8 +24,7 @@ def default_context_env(context_name: str, pure: bool = False,
 
 def default_context_urls(unix_socket_location: str = DEFAULT_DTPS_UNIX_SOCKET_LOCATION) -> List[str]:
     urls: List[str] = [
-        # TODO: port should be 0 (randomly assigned by the OS)
-        "create:http://0.0.0.0:2333/",
+        "create:http://0.0.0.0:0/",
     ]
     if unix_socket_location != DEFAULT_DTPS_UNIX_SOCKET_LOCATION or os.path.exists(TMPFS_DISK_LOCATION):
         if not os.path.exists(unix_socket_location):
