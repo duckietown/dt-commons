@@ -150,7 +150,7 @@ class Node(DTProcess):
             await config.expose(self.context / "config")
 
     async def dtps_expose(self):
-        await self.switchboard.navigate("nodes", self.name).expose(self.context)
+        await (self.switchboard / "nodes" / self.name).expose(self.context)
 
     @abstractmethod
     async def worker(self):

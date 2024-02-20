@@ -188,7 +188,7 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
 
     @classmethod
     def from_name(cls, package: Package, name: str):
-        fpath: Path = package.path / "config" / f"{name}.yaml"
+        fpath: Path = package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")
         if not fpath.is_file():
             raise FileNotFoundError(f"Configuration file '{fpath}' not found")
         return cls.from_file(fpath.as_posix())

@@ -8,6 +8,10 @@ class RobotHardware(IntEnum):
     JETSON_NANO = 3
     VIRTUAL = 90
 
+    @property
+    def str(self) -> str:
+        return self.name.lower()
+
     @classmethod
     def from_string(cls, rhardware: str) -> 'RobotHardware':
         _from_string = {
@@ -29,6 +33,10 @@ class RobotType(IntEnum):
     TRAFFIC_LIGHT = 3
     DUCKIETOWN = 4
     DUCKIEDRONE = 5
+
+    @property
+    def str(self) -> str:
+        return self.name.lower()
 
     @classmethod
     def from_string(cls, rtype: str) -> 'RobotType':
@@ -79,6 +87,10 @@ class RobotConfiguration(IntEnum):
     WS21C = 72
     # Duckiecam
     DC21 = 80
+
+    @property
+    def str(self) -> str:
+        return self.name
 
     @classmethod
     def from_string(cls, name) -> 'RobotConfiguration':
