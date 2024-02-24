@@ -159,9 +159,15 @@ class Node(DTProcess):
     async def sidecar(self):
         return
 
+    async def __spin(self):
+        await asyncio.wait([
+            asyncio.create_task(self.worker()),
+            asyncio.create_task(self.sidecar())
+        ])
+
     def spin(self):
         try:
-            asyncio.run(asyncio.wait([self.worker(), self.sidecar()]))
+            asyncio.run(self.__spin())
         except (KeyboardInterrupt, asyncio.CancelledError):
             self.__on_shutdown()
 
