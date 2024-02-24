@@ -156,11 +156,18 @@ class Node(DTProcess):
     async def worker(self):
         raise NotImplementedError("Method 'worker' must be implemented by the final node class.")
 
+    async def sidecar(self):
+        return
+
     def spin(self):
         try:
-            asyncio.run(self.worker())
+            asyncio.run(asyncio.wait([self.worker(), self.sidecar()]))
         except (KeyboardInterrupt, asyncio.CancelledError):
             self.__on_shutdown()
+
+    async def join(self):
+        while not self.is_shutdown:
+            await asyncio.sleep(0.5)
 
     def loginfo(self, msg):
         self.logger.info(msg)
