@@ -18,10 +18,11 @@ from dtps_http import RawData, TransformError
 
 class YAMLFileBackend:
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, schema_path: Optional[str] = None):
         self._file_path: str = file_path
+        self._schema_path: Optional[str] = schema_path
         self._lock: Semaphore = Semaphore()
-        self._schema: Optional[dict] = self._load_schema()
+        self._schema: Optional[dict] = self._load_schema(schema_path)
 
     @property
     def schema(self) -> Optional[dict]:
@@ -56,8 +57,8 @@ class YAMLFileBackend:
             if lock:
                 self._lock.release()
 
-    def _load_schema(self) -> Optional[dict]:
-        schema_path = self._file_path + ".schema"
+    def _load_schema(self, schema_path: Optional[str] = None) -> Optional[dict]:
+        schema_path = schema_path or (self._file_path + ".schema")
         if not os.path.exists(schema_path):
             return None
         with open(schema_path, 'r') as file:
@@ -191,11 +192,15 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
         fpath: Path = package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")
         if not fpath.is_file():
             raise FileNotFoundError(f"Configuration file '{fpath}' not found")
-        return cls.from_file(fpath.as_posix())
+        schema_path: Path = package.path / "config" / "schema.json"
+        return cls.from_file(
+            fpath.as_posix(),
+            schema_path=schema_path.as_posix() if schema_path.is_file() else None
+        )
 
     @classmethod
-    def from_file(cls, file_path: str) -> Any:
-        backend = YAMLFileBackend(file_path)
+    def from_file(cls, file_path: str, schema_path: Optional[str] = None) -> Any:
+        backend = YAMLFileBackend(file_path, schema_path)
         instance = cls.from_dict(backend.read())
         instance.__backend__ = backend
         return instance
