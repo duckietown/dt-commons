@@ -2,12 +2,11 @@ import asyncio
 import inspect
 import os
 from abc import abstractmethod
-from typing import Optional
-
-from dt_robot_utils import get_robot_name
-from dtps import DTPSContext, context
+from typing import Optional, Awaitable, Callable, Any, List
 
 from dt_class_utils import DTProcess
+from dt_robot_utils import get_robot_name
+from dtps import DTPSContext, context
 from .config import NodeConfiguration
 from .constants import NodeHealth, NodeType
 from .dtps import default_context_env
@@ -63,6 +62,7 @@ class Node(DTProcess):
         self._ghost: bool = ghost
         self._health: NodeHealth = NodeHealth.STARTING
         self._health_reason: Optional[str] = None
+        self._event_loop: Optional[asyncio.AbstractEventLoop] = None
 
         self.loginfo("Initializing...")
 
@@ -91,6 +91,9 @@ class Node(DTProcess):
         # DTPS contexts
         self.context: Optional[DTPSContext] = None
         self.switchboard: Optional[DTPSContext] = None
+
+        # events
+        self.switchboard_ready = asyncio.Event()
 
         # if enable_dtps:
         #     # create self context
@@ -142,9 +145,10 @@ class Node(DTProcess):
 
     async def dtps_init(self, config: Optional[NodeConfiguration] = None):
         # create self context
-        self.context = await context("self", default_context_env("self"))
+        self.context = await context("self", default_context_env("self", self.name))
         # create switchboard context
         self.switchboard = (await context("switchboard")).navigate(self._robot_name)
+        self.switchboard_ready.set()
         # post node config
         if config is not None:
             await config.expose(self.context / "config")
@@ -156,14 +160,22 @@ class Node(DTProcess):
     async def worker(self):
         raise NotImplementedError("Method 'worker' must be implemented by the final node class.")
 
-    async def sidecar(self):
-        return
-
     async def __spin(self):
+        self._event_loop = asyncio.get_event_loop()
         await asyncio.wait([
             asyncio.create_task(self.worker()),
-            asyncio.create_task(self.sidecar())
+            *[
+                asyncio.create_task(sidecar()) for sidecar in self._get_sidecars()
+            ]
         ])
+
+    def _get_sidecars(self) -> List[Callable[[], Awaitable]]:
+        return [
+            method
+            for name, method in
+            inspect.getmembers(self, predicate=inspect.ismethod)
+            if getattr(method, "__sidecar__", False)
+        ]
 
     def spin(self):
         try:
@@ -174,6 +186,15 @@ class Node(DTProcess):
     async def join(self):
         while not self.is_shutdown:
             await asyncio.sleep(0.5)
+
+    def call_soon(self, coro: Callable[[Any], Awaitable[None]], *args, **kwargs):
+        if self._event_loop is None:
+            raise RuntimeError("Event loop is not initialized yet. Call spin() first.")
+
+        async def _coro():
+            await coro(*args, **kwargs)
+
+        asyncio.run_coroutine_threadsafe(_coro(), self._event_loop)
 
     def loginfo(self, msg):
         self.logger.info(msg)
