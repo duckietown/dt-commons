@@ -43,6 +43,10 @@ class Package:
     def configs_dir(self) -> Path:
         return self.path / "config"
 
+    @property
+    def assets_dir(self) -> Path:
+        return self.path / "assets"
+
     def has_config(self, config: str) -> bool:
         config: str = f"{config}.yaml" if not config.endswith(".yaml") else config
         return (self.path / "config" / config).is_file()
