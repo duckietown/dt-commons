@@ -162,11 +162,14 @@ class Node(DTProcess):
     async def worker(self):
         raise NotImplementedError("Method 'worker' must be implemented by the final node class.")
 
+    async def _worker(self):
+        await self.worker()
+
     async def __spin(self):
         self._event_loop = asyncio.get_event_loop()
 
         await asyncio.wait([
-            create_task(self.worker, "worker", self.logger),
+            create_task(self._worker, "worker", self.logger),
             *[
                 create_task(sidecar, f"sidecar[{name}]", self.logger) for name, sidecar in self._get_sidecars()
             ]
