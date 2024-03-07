@@ -274,8 +274,10 @@ configure_libraries() {
                     LIBRARY_PYPROJECT_TOML="${lib}/pyproject.toml"
                     if [ -f "${LIBRARY_SETUP_PY}" ] || [ -f "${LIBRARY_PYPROJECT_TOML}" ]; then
                         debug "  > Found library in ${lib}"
-                        python3 -m pip install --no-dependencies -e "${lib}" > /dev/null
-                        info "  < Loaded library: $(basename ${lib})\t(from: ${lib})"
+                        TMP_LIB_DIR=$(mktemp -d)
+                        cp -R "${lib}" "${TMP_LIB_DIR}"
+                        python3 -m pip install --no-dependencies --editable "${TMP_LIB_DIR}" > /dev/null
+                        info "  < Loaded library: $(basename ${lib})\t(from temporary directory: ${TMP_LIB_DIR})"
                     fi
                 done
                 debug " > Analyzed ${PROJECT_LIBRARIES_DIR}/"
