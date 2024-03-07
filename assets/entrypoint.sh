@@ -274,10 +274,18 @@ configure_libraries() {
                     LIBRARY_PYPROJECT_TOML="${lib}/pyproject.toml"
                     if [ -f "${LIBRARY_SETUP_PY}" ] || [ -f "${LIBRARY_PYPROJECT_TOML}" ]; then
                         debug "  > Found library in ${lib}"
+                        # ---
+                        # copy the library to a temporary directory
+                        LIB_NAME=$(basename ${lib})
                         TMP_LIB_DIR=$(mktemp -d)
                         cp -R "${lib}" "${TMP_LIB_DIR}"
-                        python3 -m pip install --no-dependencies --editable "${TMP_LIB_DIR}" > /dev/null
-                        info "  < Loaded library: $(basename ${lib})\t(from temporary directory: ${TMP_LIB_DIR})"
+                        # poetry expects a full repository while libraries are submodules with a fake .git file
+                        export POETRY_DYNAMIC_VERSIONING_BYPASS="0.0.0"
+                        export POETRY_DYNAMIC_VERSIONING_COMMANDS=""
+                        # install the library
+                        python3 -m pip install --no-dependencies --editable "${TMP_LIB_DIR}/${LIB_NAME}" > /dev/null
+                        # ---
+                        info "  < Loaded library: ${LIB_NAME}\t(from temporary directory: ${TMP_LIB_DIR})"
                     fi
                 done
                 debug " > Analyzed ${PROJECT_LIBRARIES_DIR}/"
