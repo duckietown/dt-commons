@@ -1,12 +1,14 @@
 import asyncio
 import inspect
 import os
+import traceback
 from abc import abstractmethod
-from typing import Optional, Awaitable, Callable, Any, List
+from typing import Optional, Awaitable, Callable, Any, List, Coroutine, Tuple
 
 from dt_class_utils import DTProcess
 from dt_robot_utils import get_robot_name
 from dtps import DTPSContext, context
+from .asyncio import create_task
 from .config import NodeConfiguration
 from .constants import NodeHealth, NodeType
 from .dtps import default_context_env
@@ -162,16 +164,17 @@ class Node(DTProcess):
 
     async def __spin(self):
         self._event_loop = asyncio.get_event_loop()
+
         await asyncio.wait([
-            asyncio.create_task(self.worker()),
+            create_task(self.worker, "worker", self.logger),
             *[
-                asyncio.create_task(sidecar()) for sidecar in self._get_sidecars()
+                create_task(sidecar, f"sidecar[{name}]", self.logger) for name, sidecar in self._get_sidecars()
             ]
         ])
 
-    def _get_sidecars(self) -> List[Callable[[], Awaitable]]:
+    def _get_sidecars(self) -> List[Tuple[str, Callable[[], Awaitable]]]:
         return [
-            method
+            (name, method)
             for name, method in
             inspect.getmembers(self, predicate=inspect.ismethod)
             if getattr(method, "__sidecar__", False)
