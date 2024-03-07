@@ -25,7 +25,7 @@ class Node(PythonModule):
             shell: bool = False,
             sigterm_timeout: SomeSubstitutionsType = LaunchConfiguration('sigterm_timeout', default=5),
             sigkill_timeout: SomeSubstitutionsType = LaunchConfiguration('sigkill_timeout', default=5),
-            emulate_tty: bool = False,
+            emulate_tty: bool = True,
             output: SomeSubstitutionsType = 'screen',
             output_format: Text = '[{this.process_description.final_name}] {line}',
             cached_output: bool = False,
