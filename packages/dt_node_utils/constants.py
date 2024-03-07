@@ -1,9 +1,13 @@
 import os
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
 DIAGNOSTICS_ENABLED = os.environ.get('DT_DIAGNOSTICS', '1').lower() in \
                       ['1', 'true', 'yes', 'enabled']
+
+NODE_CONFIG_DIR = Path(os.environ.get('DT_NODE_CONFIG_DIR', '/data/config/nodes'))
+NODE_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class TopicDirection(Enum):

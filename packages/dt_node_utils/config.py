@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 from abc import abstractmethod
 from pathlib import Path
 from threading import Semaphore
@@ -10,8 +11,11 @@ import cbor2
 import jsonschema
 import dataclasses
 from dataclasses_json import DataClassJsonMixin
+from jsonschema.exceptions import ValidationError
 
+from dt_node_utils.constants import NODE_CONFIG_DIR
 from dt_node_utils.package import Package
+from dt_robot_utils import get_robot_name
 from dtps import DTPSContext
 from dtps_http import RawData, TransformError
 
@@ -23,6 +27,8 @@ class YAMLFileBackend:
         self._schema_path: Optional[str] = schema_path
         self._lock: Semaphore = Semaphore()
         self._schema: Optional[dict] = self._load_schema(schema_path)
+        # validate the initial data
+        self.validate(self.read())
 
     @property
     def schema(self) -> Optional[dict]:
@@ -188,18 +194,40 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
         NodeConfiguration.__init__(self)
 
     @classmethod
-    def from_name(cls, package: Package, name: str):
+    def from_name(cls, package: Package, node: str, name: str):
+        # original configuration file packaged with the node
         fpath: Path = package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")
         if not fpath.is_file():
             raise FileNotFoundError(f"Configuration file '{fpath}' not found")
+        # schema file packaged with the node
         schema_path: Path = package.path / "config" / "schema.json"
-        return cls.from_file(
-            fpath.as_posix(),
+        # node configuration file in the user's configuration directory
+        user_fpath: Path = NODE_CONFIG_DIR / node / f"{get_robot_name()}.yaml"
+        if not user_fpath.exists():
+            # copy the original configuration file to the user's configuration directory
+            user_fpath.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(fpath, user_fpath)
+        # load the user configuration
+        try:
+            return cls._from_file(
+                user_fpath.as_posix(),
+                schema_path=schema_path.as_posix() if schema_path.is_file() else None
+            )
+        except ValidationError as e:
+            print("User configuration file is invalid. "
+                  "Falling back to the original configuration file.\n"
+                  "The error is the following:\n\n", e, "\n")
+            # copy the original configuration file to the user's configuration directory
+            user_fpath.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(fpath, user_fpath)
+        # load again
+        return cls._from_file(
+            user_fpath.as_posix(),
             schema_path=schema_path.as_posix() if schema_path.is_file() else None
         )
 
     @classmethod
-    def from_file(cls, file_path: str, schema_path: Optional[str] = None) -> Any:
+    def _from_file(cls, file_path: str, schema_path: Optional[str] = None) -> Any:
         backend = YAMLFileBackend(file_path, schema_path)
         instance = cls.from_dict(backend.read())
         instance.__backend__ = backend
