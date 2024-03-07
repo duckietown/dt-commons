@@ -109,9 +109,7 @@ COPY ./assets/root/. /
 RUN ${PROJECT_PATH}/assets/setup/${TARGETPLATFORM}/setup.sh
 
 # install assets
-RUN cp ${PROJECT_PATH}/assets/bin/* /usr/local/bin/ && \
-    cp ${PROJECT_PATH}/assets/entrypoint.sh /entrypoint.sh && \
-    cp ${PROJECT_PATH}/assets/environment.sh /environment.sh
+RUN ${PROJECT_PATH}/assets/setup/install-binaries.sh
 
 # copy the source code
 COPY ./packages "${PROJECT_PATH}/packages"
