@@ -5,9 +5,6 @@
 # NOTE: Use only '<=' here to cover the needs of dt-ros-commons that is based on an older OS / Python version
 # NOTE: ------------------------------------------------------------------------------------------------------
 
-
-# these are for service registration and discovery
-zeroconf<=0.126.0
 netifaces<=0.11.0
 
 # these are for various APIs
@@ -16,6 +13,7 @@ Flask-Cors<=4.0.0
 requests<=2.31.0
 
 # these are needed to support virtual robots
+# TODO: these can be removed once the virtual robots are moved to DTPS
 cbor2<=5.5.1
 pyzmq<=25.1.1
 
