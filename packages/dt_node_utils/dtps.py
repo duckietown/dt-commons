@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import List, Dict
 from urllib.parse import quote
 
-TMPFS_DISK_LOCATION: str = "/data/ramdisk"
-DEFAULT_DTPS_UNIX_SOCKET_LOCATION: str = os.path.join(TMPFS_DISK_LOCATION, "dtps")
+DTPS_TMPFS_DISK_LOCATION: str = "/dtps"
+DEFAULT_DTPS_UNIX_SOCKET_LOCATION: str = os.environ.get("DTPS_UNIX_SOCKET_LOCATION", DTPS_TMPFS_DISK_LOCATION)
 DTPS_NODES_PREFIX: str = "node"
 DTPS_BASE = "DTPS_BASE"
 
@@ -27,7 +27,8 @@ def default_context_urls(node_name: str, unix_socket_location: str = DEFAULT_DTP
     urls: List[str] = [
         "create:http://0.0.0.0:0/",
     ]
-    if unix_socket_location != DEFAULT_DTPS_UNIX_SOCKET_LOCATION or os.path.exists(TMPFS_DISK_LOCATION):
+    if unix_socket_location != DEFAULT_DTPS_UNIX_SOCKET_LOCATION or os.path.exists(DTPS_TMPFS_DISK_LOCATION):
+        # path to this node's socket
         sock_fpath: str = os.path.join(unix_socket_location, DTPS_NODES_PREFIX, f"{node_name}.sock")
         # make directory
         Path(sock_fpath).parent.mkdir(parents=True, exist_ok=True)
