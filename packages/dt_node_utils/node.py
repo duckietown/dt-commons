@@ -168,12 +168,17 @@ class Node(DTProcess):
     async def __spin(self):
         self._event_loop = asyncio.get_event_loop()
 
-        await asyncio.wait([
-            create_task(self._worker, "worker", self.logger),
-            *[
-                create_task(sidecar, f"sidecar[{name}]", self.logger) for name, sidecar in self._get_sidecars()
-            ]
-        ])
+        try:
+            await asyncio.wait([
+                create_task(self._worker, "worker", self.logger),
+                *[
+                    create_task(sidecar, f"sidecar[{name}]", self.logger) for name, sidecar in self._get_sidecars()
+                ]
+            ])
+        except asyncio.CancelledError:
+            self.loginfo("Initiated shutdown sequence")
+            self.__on_shutdown()
+            self.loginfo("Shutdown sequence completed")
 
     def _get_sidecars(self) -> List[Tuple[str, Callable[[], Awaitable]]]:
         return [
