@@ -7,11 +7,14 @@ ROBOT_CONFIGURATION_FILE=${CONFIG_DIR}/robot_configuration
 ROBOT_HARDWARE_FILE=${CONFIG_DIR}/robot_hardware
 
 # locations where dtprojects are stored
-PROJECTS_LOCATIONS=("${SOURCE_DIR}")
+PROJECTS_LOCATIONS=("/code/src" "${SOURCE_DIR}")
 # add catkin src if it exists
 if [ ${#CATKIN_WS_DIR} -gt 0 ] && [ -d "${CATKIN_WS_DIR}/src" ]; then
     PROJECTS_LOCATIONS[${#PROJECTS_LOCATIONS[@]}]="${CATKIN_WS_DIR}/src"
 fi
+
+# keep only unique values
+PROJECTS_LOCATIONS=($(printf "%s\n" "${PROJECTS_LOCATIONS[@]}" | sort -u | tr '\n' ' '))
 
 echo "==> Entrypoint"
 
@@ -191,12 +194,16 @@ configure_hardware() {
 configure_python() {
     # make the code discoverable by python
     for src in "${PROJECTS_LOCATIONS[@]}"; do
-        for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
-            if [ -d "${d}/packages" ]; then
-                debug " > Adding ${d}/packages to PYTHONPATH"
-                export PYTHONPATH="${d}/packages:${PYTHONPATH}"
-            fi
-        done
+        if [ -d "${src}" ]; then
+            for d in $(find "${src}" -mindepth 1 -maxdepth 1 -type d); do
+                if [ -d "${d}/packages" ]; then
+                    debug " > Adding ${d}/packages to PYTHONPATH"
+                    export PYTHONPATH="${d}/packages:${PYTHONPATH}"
+                fi
+            done
+        else
+            warning "Project location '${src}' does not exist."
+        fi
     done
 }
 
