@@ -7,7 +7,10 @@ DIAGNOSTICS_ENABLED = os.environ.get('DT_DIAGNOSTICS', '1').lower() in \
                       ['1', 'true', 'yes', 'enabled']
 
 NODE_CONFIG_DIR = Path(os.environ.get('DT_NODE_CONFIG_DIR', '/data/config/nodes'))
-NODE_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    NODE_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+except PermissionError:
+    print(f"WARNING: Permission denied to create directory {NODE_CONFIG_DIR}. Things might not work as expected.")
 
 
 class TopicDirection(Enum):
