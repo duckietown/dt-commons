@@ -4,4 +4,4 @@
 dtps-http>=1.0.13,<2
 
 # messages
-duckietown-messages>=0.0.7,<2
+duckietown-messages>=0.0.8,<2
