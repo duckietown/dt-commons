@@ -165,3 +165,7 @@ LABEL \
     org.duckietown.label.base.tag="${BASE_TAG}"
 # <== Do not change the code above this line
 # <==================================================
+
+
+# TODO: temporary until ament-* packages are put back on the ubuntu/noble apt repository (they disappeared on Apr 22 2024)
+COPY ./TEMPORARY_dt-pip3-install /usr/local/bin/dt-pip3-install
