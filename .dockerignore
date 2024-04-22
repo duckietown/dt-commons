@@ -11,7 +11,3 @@
 
 # YOUR FILES LISTED BELOW THIS LINE (IMPORTANT: PREPEND !)
 # ----------------------------------------------------------------------------
-
-
-# TODO: temporary until ament-* packages are put back on the ubuntu/noble apt repository (they disappeared on Apr 22 2024)
-!TEMPORARY_dt-pip3-install
