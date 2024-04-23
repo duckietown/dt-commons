@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -e
+
+for d in $(find "${SOURCE_DIR}" -type f -name "package.xml" -printf "%h\n"); do
+    if [ -f "${d}/setup.py" ]; then
+        echo " > Installing package '$(basename ${d})' [location: ${d}] ..."
+        python3 -m pip install --editable ${d}
+        echo " < Package '$(basename ${d})' installed"
+    fi
+done
