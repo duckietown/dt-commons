@@ -115,7 +115,7 @@ RUN ${PROJECT_PATH}/assets/setup/install-binaries.sh
 COPY ./packages "${PROJECT_PATH}/packages"
 
 # build packages
-RUN dt-colcon-build ${WORKSPACE_DIR}
+RUN dt-python-build ${WORKSPACE_DIR}
 
 # source environment on every bash session
 RUN echo "source /environment.sh" >> /etc/bash.bashrc

@@ -1,6 +1,4 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
-# NOTE: only place non-Duckietown libraries here; pin versions only if necessary
-
 # NOTE: ------------------------------------------------------------------------------------------------------
 # NOTE: Use only '<=' here to cover the needs of dt-ros-commons that is based on an older OS / Python version
 # NOTE: ------------------------------------------------------------------------------------------------------
@@ -24,4 +22,12 @@ dataclasses-json<=0.6.4
 jsonschema<=4.21.1
 
 # NumPy
-numpy<=1.26.2
+numpy<=1.26.4
+
+
+# -- Duckietown --
+
+dtps-http>=1.3.6,<2
+
+# messages
+duckietown-messages>=0.0.10,<2

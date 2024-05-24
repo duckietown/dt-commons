@@ -1,13 +1,14 @@
 import asyncio
 import inspect
 import os
-import traceback
 from abc import abstractmethod
-from typing import Optional, Awaitable, Callable, Any, List, Coroutine, Tuple
+from typing import Optional, Awaitable, Callable, Any, List, Tuple, Union, cast
 
 from dt_class_utils import DTProcess
 from dt_robot_utils import get_robot_name
 from dtps import DTPSContext, context
+from dtps_http import RawData, TransformError
+from duckietown_messages.standard import Boolean
 from .asyncio import create_task
 from .config import NodeConfiguration
 from .constants import NodeHealth, NodeType
@@ -76,8 +77,8 @@ class Node(DTProcess):
         self._package: Optional[Package] = Package.nearest(node_fpath)
 
         # Handle publishers, subscribers, and the state switch
-        self._switch: bool = False if (fsm_controlled and FSM_NODE_CONTROL) else True
-        self.loginfo(f"Node starting with switch={self._switch}")
+        self._active: bool = False if (fsm_controlled and FSM_NODE_CONTROL) else True
+        self.loginfo(f"Node starting with switch={self._active}")
         self.logdebug(f"Switch configuration: "
                       f"fsm_controlled:{fsm_controlled}, env[FSM_NODE_CONTROL]:{FSM_NODE_CONTROL}")
 
@@ -93,6 +94,7 @@ class Node(DTProcess):
         # DTPS contexts
         self.context: Optional[DTPSContext] = None
         self.switchboard: Optional[DTPSContext] = None
+        self.switch: Optional[DTPSContext] = None
 
         # events
         self.switchboard_ready = asyncio.Event()
@@ -125,9 +127,9 @@ class Node(DTProcess):
 
     # Read-only properties for the private attributes
     @property
-    def switch(self) -> bool:
+    def active(self) -> bool:
         """Current state of the node on/off switch"""
-        return self._switch
+        return self._active
 
     @property
     def package(self) -> Optional[Package]:
@@ -148,6 +150,8 @@ class Node(DTProcess):
     async def dtps_init(self, config: Optional[NodeConfiguration] = None):
         # create self context
         self.context = await context("self", default_context_env("self", self.name))
+        # create switch context
+        self.switch = await (self.context / "switch").queue_create(transform=self._on_switch_change)
         # create switchboard context
         self.switchboard = (await context("switchboard")).navigate(self._robot_name)
         self.switchboard_ready.set()
@@ -231,37 +235,35 @@ class Node(DTProcess):
     def on_switch_off(self):
         pass
 
-    # def _srv_switch(self, request):
-    #     """
-    #     Args:
-    #         request (:obj:`std_srvs.srv.SetBool`): The switch request from the ``~switch`` callback
-    #
-    #     Returns:
-    #         :obj:`std_srvs.srv.SetBoolResponse`: Response for successful feedback
-    #
-    #     """
-    #     old_state = self._switch
-    #     self._switch = new_state = request.data
-    #     # propagate switch change to publishers and subscribers
-    #     for pub in self.publishers:
-    #         pub.active = self._switch
-    #     for sub in self.subscribers:
-    #         sub.active = self._switch
-    #     # tell the node about the switch
-    #     on_switch_fcn = {False: self.on_switch_off, True: self.on_switch_on}[self._switch]
-    #     on_switch_fcn()
-    #     # update node switch in the diagnostics manager
-    #     if DTROSDiagnostics.enabled():
-    #         DTROSDiagnostics.getInstance().update_node(enabled=self._switch)
-    #     # create a response to the service call
-    #     msg = "Node switched from [%s] to [%s]" % ("on" if old_state else "off", "on" if new_state else "off")
-    #     # print out the change in state
-    #     self.log(msg)
-    #     # reply to the service call
-    #     response = SetBoolResponse()
-    #     response.success = True
-    #     response.message = msg
-    #     return response
+    async def _on_switch_change(self, rd: RawData) -> Union[RawData, TransformError]:
+        # noinspection PyBroadException
+        try:
+            new_state: bool = cast(bool, rd.get_as_native_object())
+            assert isinstance(new_state, bool)
+        except (Exception, AssertionError):
+            # noinspection PyBroadException
+            try:
+                new_state: bool = Boolean.from_rawdata(rd).data
+            except Exception:
+                return TransformError("Expected a boolean value or a standard/Boolean message")
+
+        old_state: bool = self.active
+
+        if new_state != old_state:
+            if new_state:
+                self.on_switch_on()
+            else:
+                self.on_switch_off()
+
+            self._active = new_state
+
+            msg = "Node switched from [%s] to [%s]" % ("on" if old_state else "off", "on" if new_state else "off")
+            self.loginfo(msg)
+
+        return RawData.cbor_from_native_object({
+            "old": old_state,
+            "new": new_state
+        })
 
     def __on_shutdown(self):
         self.on_shutdown()
@@ -270,5 +272,3 @@ class Node(DTProcess):
         # this function does not do anything, it is called when the node shuts down.
         # It can be redefined by the user in the final node class.
         pass
-
-

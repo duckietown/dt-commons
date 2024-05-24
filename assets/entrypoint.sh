@@ -21,6 +21,11 @@ echo "==> Entrypoint"
 # if anything weird happens from now on, STOP
 set -e
 
+# SETX enables printing the command before execution
+if [ "${SETX:-}" = "1" ]; then
+    set -x
+fi
+
 # utility functions
 i-am-root() {
     [ "$EUID" -eq 0 ]
