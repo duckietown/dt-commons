@@ -213,7 +213,7 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
                 user_fpath.as_posix(),
                 schema_path=schema_path.as_posix() if schema_path.is_file() else None
             )
-        except ValidationError as e:
+        except (ValidationError, KeyError) as e:
             print("User configuration file is invalid. "
                   "Falling back to the original configuration file.\n"
                   "The error is the following:\n\n", e, "\n")
