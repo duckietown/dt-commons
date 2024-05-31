@@ -81,6 +81,7 @@ class RobotConfiguration(IntEnum):
     # Duckiedrone
     DD18 = 60
     DD21 = 61
+    DD24 = 62
     # Workstation
     WS21A = 70
     WS21B = 71

@@ -195,6 +195,31 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
 
     @classmethod
     def from_name(cls, package: Package, node: str, name: str):
+        """
+        Load a configuration file based on the package, node, and name.
+
+        Args:
+            package (Package): The package containing the configuration file.
+            node (str): The name of the node.
+            name (str): The name of the configuration file.
+
+        Returns:
+            Config: The loaded configuration object.
+
+        Raises:
+            FileNotFoundError: If the configuration file is not found.
+            ValidationError: If the user configuration file is invalid.
+
+        Description:
+            This method loads a configuration file based on the provided package, node, and name.
+            The configuration file can be loaded from the following paths:
+            1. The original configuration file packaged with the node, located at `package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")`.
+            2. The schema file packaged with the node, located at `package.path / "config" / "schema.json"`.
+            3. The node configuration file in the user's configuration directory, located at `NODE_CONFIG_DIR / node / f"{get_robot_name()}.yaml"`.
+
+            If the user's configuration file does not exist, the original configuration file will be copied to the user's configuration directory.
+
+        """
         # original configuration file packaged with the node
         fpath: Path = package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")
         if not fpath.is_file():
