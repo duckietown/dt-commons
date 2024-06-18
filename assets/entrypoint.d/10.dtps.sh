@@ -11,5 +11,10 @@ export DTPS_BASE_SWITCHBOARD_0="http+unix://%2Fdtps%2Fswitchboard.sock/"
 if [ "${DT_DEPLOYED_ONBOARD}" = "1" ] && [ "${netmode}" = "HOST" ]; then
     export DTPS_BASE_SWITCHBOARD_1="http://localhost:11511/"
 else
-    export DTPS_BASE_SWITCHBOARD_1="http://${VEHICLE_NAME}.local:11511/"
+    # prefer IP address over mDNS
+    if [ -n "${VEHICLE_IP}" ]; then
+        export DTPS_BASE_SWITCHBOARD_1="http://${VEHICLE_IP}:11511/"
+    else
+        export DTPS_BASE_SWITCHBOARD_1="http://${VEHICLE_NAME}.local:11511/"
+    fi
 fi
