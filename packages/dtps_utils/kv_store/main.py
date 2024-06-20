@@ -5,7 +5,7 @@ import json
 import os
 import re
 from abc import abstractmethod
-from typing import Optional, Dict, Type, Union, List, Set
+from typing import Optional, Dict, Type, Union, Set
 
 import yaml
 
@@ -147,38 +147,38 @@ class PlainFileAdapter(GenericFileAdapter):
 ADAPTED_FILES_DIR = "/data/config"
 ADAPTED_FILES = {
     f"{ADAPTED_FILES_DIR}/node/(?P<key>.*)/{ROBOT_NAME}.yaml": FileAdapterTemplate(
-        object_path="config/node/{key}",
+        object_path="data/node/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
     ),
 
     f"{ADAPTED_FILES_DIR}/permissions/(?P<key>.*)": FileAdapterTemplate(
-        object_path="config/permission/{key}",
+        object_path="data/permission/{key}",
         properties=FullRW,
         kind=PlainFileAdapter,
     ),
 
     f"{ADAPTED_FILES_DIR}/calibrations/(?P<key>.*)/{ROBOT_NAME}.yaml": FileAdapterTemplate(
-        object_path="config/calibration/{key}",
+        object_path="data/calibration/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
     ),
 
     f"{ADAPTED_FILES_DIR}/calibrations/(?P<key>.*)/default.yaml": FileAdapterTemplate(
-        object_path="config/calibration/{key}/default",
+        object_path="data/calibration/{key}/default",
         properties=TopicProperties.readonly(),
         kind=YAMLFileAdapter,
     ),
 
     f"{ADAPTED_FILES_DIR}/robot_(?P<key>.*)": FileAdapterTemplate(
-        object_path="config/robot/{key}",
+        object_path="data/robot/{key}",
         properties=TopicProperties.readonly(),
         kind=PlainFileAdapter,
     ),
 
     # match any other YAML file (always leave this as the last item in this dictionary)
     f"{ADAPTED_FILES_DIR}/(?P<key>.*).yaml": FileAdapterTemplate(
-        object_path="config/{key}",
+        object_path="data/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
     ),
@@ -242,7 +242,7 @@ class KVStore:
             # create new adapter
             adapter = YAMLFileAdapter(
                 file_path=fpath,
-                object_path=f"config/{key}",
+                object_path=f"data/{key}",
                 properties=FullRW,
                 create=True,
                 persist=persist,
