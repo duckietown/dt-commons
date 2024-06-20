@@ -96,7 +96,7 @@ class GenericFileAdapter:
         self.write_to_disk()
 
     async def init(self, cxt: DTPSContext):
-        self._context = await cxt.navigate(self.object_path).queue_create()
+        self._context = await cxt.navigate(self.object_path).queue_create(topic_properties=self.properties)
         # publish the initial value
         await self._context.publish(RawData.cbor_from_native_object(self.to_native_object()))
         # subscribe for updates
