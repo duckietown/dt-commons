@@ -18,6 +18,7 @@ DEFAULT_PORT = 11411
 
 ROBOT_NAME: str = get_robot_name()
 EXAMPLE_CREATE_PAYLOAD = {"key": "/example/key/", "value": ["duckietown", "is", "cool"], "persist": False}
+EXAMPLE_DROP_PAYLOAD = {"key": "/example/key/"}
 
 FullRW = None
 AUTO = None
@@ -27,6 +28,7 @@ AUTO = None
 class FileAdapterTemplate:
     object_path: str
     kind: Type["GenericFileAdapter"]
+    droppable: bool
     properties: Optional[TopicProperties] = AUTO
 
 
@@ -36,6 +38,7 @@ class GenericFileAdapter:
     object_path: str
     properties: Optional[TopicProperties]
     persist: bool
+    droppable: bool
     create: bool = False
     initial: Optional[object] = None
 
@@ -103,6 +106,15 @@ class GenericFileAdapter:
         if self.properties is FullRW or self.properties.pushable:
             self._subscriber = await self._context.subscribe(self.on_update)
 
+    async def drop(self) -> bool:
+        if not self.droppable:
+            return False
+        if self._subscriber:
+            await self._subscriber.unsubscribe()
+        await self._context.remove()
+        if self.persist:
+            os.remove(self.file_path)
+
     def to_rawdata(self) -> RawData:
         return RawData.json_from_native_object(self.to_native_object())
 
@@ -150,30 +162,35 @@ ADAPTED_FILES = {
         object_path="data/node/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
+        droppable=True,
     ),
 
     f"{ADAPTED_FILES_DIR}/permissions/(?P<key>.*)": FileAdapterTemplate(
         object_path="data/permission/{key}",
         properties=FullRW,
         kind=PlainFileAdapter,
+        droppable=False,
     ),
 
     f"{ADAPTED_FILES_DIR}/calibrations/(?P<key>.*)/{ROBOT_NAME}.yaml": FileAdapterTemplate(
         object_path="data/calibration/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
+        droppable=True,
     ),
 
     f"{ADAPTED_FILES_DIR}/calibrations/(?P<key>.*)/default.yaml": FileAdapterTemplate(
         object_path="data/calibration/{key}/default",
         properties=TopicProperties.readonly(),
         kind=YAMLFileAdapter,
+        droppable=False,
     ),
 
     f"{ADAPTED_FILES_DIR}/robot_(?P<key>.*)": FileAdapterTemplate(
         object_path="data/robot/{key}",
         properties=TopicProperties.readonly(),
         kind=PlainFileAdapter,
+        droppable=False,
     ),
 
     # match any other YAML file (always leave this as the last item in this dictionary)
@@ -181,6 +198,7 @@ ADAPTED_FILES = {
         object_path="data/{key}",
         properties=FullRW,
         kind=YAMLFileAdapter,
+        droppable=True,
     ),
 }
 
@@ -214,6 +232,7 @@ class KVStore:
                     file_path=file,
                     object_path=object_path,
                     properties=adapter_template.properties,
+                    droppable=adapter_template.droppable,
                     persist=True,
                 )
                 self._adapters[file] = adapter
@@ -247,12 +266,39 @@ class KVStore:
                 create=True,
                 persist=persist,
                 initial=value,
+                droppable=True,
             )
             adapter.set_content_quietly(value)
             await adapter.init(self._cxt)
             self._adapters[fpath] = adapter
         else:
             pass
+        # ---
+        return RawData.json_from_native_object(EXAMPLE_CREATE_PAYLOAD)
+
+    async def drop(self, rd: RawData):
+        # decode request
+        data: object = rd.get_as_native_object()
+        if not isinstance(data, dict) or "key" not in data:
+            return TransformError(400, f"Expected a payload of the form '{{\"key\": \"<str>\"}}'")
+
+        key: str = data["key"].strip("/")
+
+        if ".." in key:
+            return TransformError(400, "Key cannot contain '..'")
+
+        # example key/value
+        if key == EXAMPLE_DROP_PAYLOAD["key"].strip("/"):
+            return RawData.json_from_native_object(EXAMPLE_DROP_PAYLOAD)
+
+        fpath: str = f"{ADAPTED_FILES_DIR}/{key}.yaml"
+        if fpath not in self._adapters:
+            return TransformError(400, f"Key '{key}' not found")
+        else:
+            # get adapter
+            adapter = self._adapters[fpath]
+            await adapter.drop()
+            del self._adapters[fpath]
         # ---
         return RawData.json_from_native_object(EXAMPLE_CREATE_PAYLOAD)
 
@@ -264,6 +310,9 @@ class KVStore:
         # add 'define' rpc
         define = await self._cxt.navigate("define").queue_create(transform=self.define)
         await define.publish(RawData.json_from_native_object(EXAMPLE_CREATE_PAYLOAD))
+        # add 'drop' rpc
+        drop = await self._cxt.navigate("drop").queue_create(transform=self.drop)
+        await drop.publish(RawData.json_from_native_object(EXAMPLE_DROP_PAYLOAD))
         # keep running
         try:
             while True:
