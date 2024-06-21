@@ -27,7 +27,7 @@ numpy==1.26.4
 
 # -- Duckietown --
 
-dtps-http==1.3.9
+dtps-http==1.3.10
 
 # messages
-duckietown-messages==0.0.16
+duckietown-messages==0.0.18
