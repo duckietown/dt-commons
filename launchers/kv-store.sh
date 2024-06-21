@@ -13,7 +13,7 @@ dt-launchfile-init
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
 # launching app
-exec python3 -m dtps_utils.kv_store.main
+exec python3 -m kvstore.server.main
 
 
 # ----------------------------------------------------------------------------

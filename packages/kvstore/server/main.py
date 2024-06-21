@@ -5,13 +5,20 @@ import json
 import os
 import re
 from abc import abstractmethod
-from typing import Optional, Dict, Type, Union, Set
+from typing import Optional, Dict, Type, Union, Set, List, cast, Any
 
 import yaml
 
 from dt_robot_utils import get_robot_name
 from dtps import context, DTPSContext, SubscriptionInterface
 from dtps_http import TopicProperties, RawData, TransformError
+
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+if "DEBUG" in os.environ and os.environ["DEBUG"].lower() in ["1", "yes", "true"]:
+    logger.setLevel(logging.DEBUG)
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 11411
@@ -22,6 +29,8 @@ EXAMPLE_DROP_PAYLOAD = {"key": "/example/key/"}
 
 FullRW = None
 AUTO = None
+NOTSET = object()
+ObjectPath = str
 
 
 @dataclasses.dataclass
@@ -40,7 +49,7 @@ class GenericFileAdapter:
     persist: bool
     droppable: bool
     create: bool = False
-    initial: Optional[object] = None
+    initial: Optional[object] = NOTSET
 
     _content: Optional[bytes] = AUTO
     _context: DTPSContext = None
@@ -51,7 +60,7 @@ class GenericFileAdapter:
             if not self.create:
                 raise FileNotFoundError(f"File not found: {self.file_path}")
             # make sure we received data
-            if self.initial is None:
+            if self.initial is NOTSET:
                 raise ValueError("When creating a new file, 'initial' must be provided")
             # create the directory
             os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -84,7 +93,7 @@ class GenericFileAdapter:
         pass
 
     @abstractmethod
-    def raw_from_native_object(self, obj: object) -> bytes:
+    def raw_from_native_object(self, obj: Union[object, None]) -> bytes:
         pass
 
     async def on_update(self, rd: RawData):
@@ -126,20 +135,20 @@ class GenericFileAdapter:
 @dataclasses.dataclass
 class JSONFileAdapter(GenericFileAdapter):
 
-    def to_native_object(self) -> Union[dict, list, str, int, float, bool]:
+    def to_native_object(self) -> Union[dict, list, str, int, float, bool, None]:
         return json.loads(self._content.decode("utf-8"))
 
-    def raw_from_native_object(self, obj: Union[dict, list, str, int, float, bool]) -> bytes:
+    def raw_from_native_object(self, obj: Union[dict, list, str, int, float, bool, None]) -> bytes:
         return json.dumps(obj, sort_keys=True, indent=4).encode("utf-8")
 
 
 @dataclasses.dataclass
 class YAMLFileAdapter(GenericFileAdapter):
 
-    def to_native_object(self) -> Union[dict, list, str, int, float, bool, bytes]:
+    def to_native_object(self) -> Union[dict, list, str, int, float, bool, bytes, None]:
         return yaml.safe_load(self._content.decode("utf-8"))
 
-    def raw_from_native_object(self, obj: Union[dict, list, str, int, float, bool, bytes]) -> bytes:
+    def raw_from_native_object(self, obj: Union[dict, list, str, int, float, bool, bytes, None]) -> bytes:
         return yaml.dump(obj, sort_keys=True).encode("utf-8")
 
 
@@ -159,7 +168,7 @@ class PlainFileAdapter(GenericFileAdapter):
 ADAPTED_FILES_DIR = "/data/config"
 ADAPTED_FILES = {
     f"{ADAPTED_FILES_DIR}/node/(?P<key>.*)/{ROBOT_NAME}.yaml": FileAdapterTemplate(
-        object_path="data/node/{key}",
+        object_path="data/node/{key}/config",
         properties=FullRW,
         kind=YAMLFileAdapter,
         droppable=True,
@@ -173,7 +182,7 @@ ADAPTED_FILES = {
     ),
 
     f"{ADAPTED_FILES_DIR}/calibrations/(?P<key>.*)/{ROBOT_NAME}.yaml": FileAdapterTemplate(
-        object_path="data/calibration/{key}",
+        object_path="data/calibration/{key}/current",
         properties=FullRW,
         kind=YAMLFileAdapter,
         droppable=True,
@@ -208,7 +217,7 @@ class KVStore:
     def __init__(self, args: argparse.Namespace):
         self._args: argparse.Namespace = args
         self._cxt: Optional[DTPSContext] = None
-        self._adapters: Dict[str, GenericFileAdapter] = {}
+        self._adapters: Dict[ObjectPath, GenericFileAdapter] = {}
         # all files
         files = [os.path.join(dp, f) for dp, dn, fn in os.walk(ADAPTED_FILES_DIR) for f in fn]
         matched: Set[str] = set()
@@ -235,7 +244,7 @@ class KVStore:
                     droppable=adapter_template.droppable,
                     persist=True,
                 )
-                self._adapters[file] = adapter
+                self._adapters[object_path] = adapter
                 matched.add(file)
 
     async def define(self, rd: RawData):
@@ -257,7 +266,8 @@ class KVStore:
             return RawData.json_from_native_object(EXAMPLE_CREATE_PAYLOAD)
 
         fpath: str = f"{ADAPTED_FILES_DIR}/{key}.yaml"
-        if fpath not in self._adapters:
+        object_path: str = f"data/{key}"
+        if object_path not in self._adapters:
             # create new adapter
             adapter = YAMLFileAdapter(
                 file_path=fpath,
@@ -269,8 +279,9 @@ class KVStore:
                 droppable=True,
             )
             adapter.set_content_quietly(value)
+            self._adapters[object_path] = adapter
+            # NOTE: it is important that we add the adapter to the dict before creating the queue
             await adapter.init(self._cxt)
-            self._adapters[fpath] = adapter
         else:
             pass
         # ---
@@ -291,16 +302,61 @@ class KVStore:
         if key == EXAMPLE_DROP_PAYLOAD["key"].strip("/"):
             return RawData.json_from_native_object(EXAMPLE_DROP_PAYLOAD)
 
-        fpath: str = f"{ADAPTED_FILES_DIR}/{key}.yaml"
-        if fpath not in self._adapters:
+        object_path: str = f"data/{key}"
+        if object_path not in self._adapters:
             return TransformError(400, f"Key '{key}' not found")
         else:
             # get adapter
-            adapter = self._adapters[fpath]
+            adapter = self._adapters[object_path]
+            del self._adapters[object_path]
+            # NOTE: it is important that we remove the adapter from the dict before dropping the context
             await adapter.drop()
-            del self._adapters[fpath]
         # ---
-        return RawData.json_from_native_object(EXAMPLE_CREATE_PAYLOAD)
+        return RawData.json_from_native_object(EXAMPLE_DROP_PAYLOAD)
+
+    async def _on_topics_change(self, rd: RawData):
+        topics: List[str] = cast(list, rd.get_as_native_object())
+        topics = [t.strip("/") for t in topics]
+        # process new topics
+        for topic in topics:
+            object_path: str = topic.strip("/")
+            if not topic.startswith("data/"):
+                continue
+            # remove data/
+            key: str = topic[5:].strip("/")
+            fpath: str = f"{ADAPTED_FILES_DIR}/{key}.yaml"
+
+            # create new adapter if we don't have one
+            if object_path not in self._adapters:
+                # TODO: once DTSW-5915 is fixed, we fetch the meta dict as the queue's metadata (aka, app_data)
+                meta: dict = {}
+                # TODO: once DTSW-5915 is fixed, we fetch the meta dict as the queue's metadata (aka, app_data)
+
+                # args
+                persist: bool = meta.get("kvstore.persist", False)
+                value: Any = meta.get("kvstore.initial", None)
+                # create adapter
+                adapter = YAMLFileAdapter(
+                    file_path=fpath,
+                    object_path=topic,
+                    properties=FullRW,
+                    create=True,
+                    droppable=True,
+                    persist=persist,
+                    initial=value,
+                )
+                adapter.set_content_quietly(value)
+                self._adapters[object_path] = adapter
+                logger.info(f"Creating new queue for '{object_path}'")
+                # NOTE: it is important that we add the adapter to the dict before creating the queue
+                await adapter.init(self._cxt)
+        # process removed topics
+        for object_path in list(self._adapters.keys()):
+            if object_path not in topics:
+                adapter = self._adapters.pop(object_path)
+                logger.info(f"Dropping queue for '{object_path}'")
+                # NOTE: it is important that we remove the adapter from the dict before dropping the context
+                await adapter.drop()
 
     async def run(self):
         self._cxt = await context("kvstore", urls=self.urls(self._args))
@@ -313,6 +369,8 @@ class KVStore:
         # add 'drop' rpc
         drop = await self._cxt.navigate("drop").queue_create(transform=self.drop)
         await drop.publish(RawData.json_from_native_object(EXAMPLE_DROP_PAYLOAD))
+        # monitor new queues created
+        await self._cxt.navigate("dtps/topic_list").subscribe(self._on_topics_change)
         # keep running
         try:
             while True:
