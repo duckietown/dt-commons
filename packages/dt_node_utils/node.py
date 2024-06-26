@@ -94,10 +94,12 @@ class Node(DTProcess):
         # DTPS contexts
         self.context: Optional[DTPSContext] = None
         self.switchboard: Optional[DTPSContext] = None
+        self.kvstore: Optional[DTPSContext] = None
         self.switch: Optional[DTPSContext] = None
 
         # events
         self.switchboard_ready = asyncio.Event()
+        self.kvstore_ready = asyncio.Event()
 
         # if enable_dtps:
         #     # create self context
@@ -155,12 +157,15 @@ class Node(DTProcess):
         # create switchboard context
         self.switchboard = (await context("switchboard")).navigate(self._robot_name)
         self.switchboard_ready.set()
+        # create kvstore context
+        self.kvstore = await context("kvstore")
+        self.kvstore_ready.set()
         # post node config
         if config is not None:
             await config.expose(self.context / "config")
 
     async def dtps_expose(self):
-        await (self.switchboard / "nodes" / self.name).expose(self.context)
+        await (self.switchboard / "node" / self.name).expose(self.context)
 
     @abstractmethod
     async def worker(self):
