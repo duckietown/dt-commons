@@ -214,8 +214,7 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
             This method loads a configuration file based on the provided package, node, and name.
             The configuration file can be loaded from the following paths:
             1. The original configuration file packaged with the node, located at `package.path / "config" / (name if name.endswith(".yaml") else f"{name}.yaml")`.
-            2. The schema file packaged with the node, located at `package.path / "config" / "schema.json"`.
-            3. The node configuration file in the user's configuration directory, located at `NODE_CONFIG_DIR / node / f"{get_robot_name()}.yaml"`.
+            2. The node configuration file in the user's configuration directory, located at `NODE_CONFIG_DIR / node / ROBOT_NAME.yaml`.
 
             If the user's configuration file does not exist, the original configuration file will be copied to the user's configuration directory.
 
@@ -229,9 +228,16 @@ class NodeConfiguration(DataClassJsonMixin, DataContainer):
         # node configuration file in the user's configuration directory
         user_fpath: Path = NODE_CONFIG_DIR / node / f"{get_robot_name()}.yaml"
         if not user_fpath.exists():
-            # copy the original configuration file to the user's configuration directory
-            user_fpath.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(fpath, user_fpath)
+            print("User configuration file not found."
+                  f"Copying the configuration file from {fpath} to {user_fpath}")
+            try:
+                # copy the original configuration file to the user's configuration directory
+                user_fpath.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(fpath, user_fpath)
+            except Exception as e:
+                print("Failed to copy the original configuration file to the user's configuration directory.\n", e)
+        else:
+            print(f"User configuration file found. Loading configuration from {user_fpath}")
         # load the user configuration
         try:
             return cls._from_file(
