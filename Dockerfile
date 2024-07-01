@@ -165,6 +165,3 @@ LABEL \
     org.duckietown.label.base.tag="${BASE_TAG}"
 # <== Do not change the code above this line
 # <==================================================
-
-# configure pretty-printing
-ENV PRETTYPRINT_EXTRAS_EXCLUDE="ipython_repr_pretty,ipython,django"

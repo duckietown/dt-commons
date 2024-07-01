@@ -1,3 +1,0 @@
-default:
-  container: default
-  service: default
