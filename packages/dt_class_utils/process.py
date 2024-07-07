@@ -5,8 +5,12 @@ import logging
 import signal
 from typing import List, Callable, Tuple
 
+from dt_cli_utils import install_colored_logs
 from .app_status import AppStatus
 from dt_module_utils import set_module_healthy
+
+# install colored logs on all loggers and change their level to INFO
+install_colored_logs(level=logging.INFO)
 
 Args, KWargs = Tuple, dict
 
@@ -34,6 +38,8 @@ class DTProcess(object):
         if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']:
             self.logger.setLevel(logging.DEBUG)
             self._is_debug = True
+        # install colored logs on our own logger
+        install_colored_logs(logger=self.logger, level=self.logger.level)
         # register signal handlers
         if self._catch_signals:
             signal.signal(signal.SIGINT, self._on_sigint)

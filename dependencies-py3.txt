@@ -24,6 +24,9 @@ jsonschema==4.21.1
 # NumPy
 numpy==1.26.4
 
+# colors for python logger
+coloredlogs==15.0.1
+
 
 # -- Duckietown --
 
