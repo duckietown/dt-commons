@@ -196,6 +196,12 @@ class DTPSPassthrough:
             self._subscribers = {}
             for p in self._subpaths:
                 async def _republish(rd: RawData):
+                    # avoid race condition with reconnection
+                    if self._subscribers is None:
+                        return
+                    if self._publishers is None:
+                        return
+                    # ---
                     rd_transformed: RawData = rd
                     if self._transformations and p in self._transformations:
                         rd_transformed = self._transformations[p](rd)
