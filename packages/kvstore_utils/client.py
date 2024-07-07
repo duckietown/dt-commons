@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import TypeVar, Type, Union, Any, Callable, Coroutine, Optional
+from typing import TypeVar, Type, Union, Any, Callable, Coroutine, Optional, Dict
 
 from dt_robot_utils import get_robot_name
 from dtps import context, DTPSContext
@@ -16,6 +16,7 @@ if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']
 
 T = TypeVar("T")
 NOTSET = object()
+JSONSerializable = Union[dict, list, str, int, float, bool, None]
 
 
 class NoValue(KeyError):
@@ -70,8 +71,11 @@ class KVStore:
             raise ValueError(msg)
         return native
 
-    async def set(self, key: str, value: Union[BaseMessage, dict, list, str, int, float, bool, bytes],
-                  persist: bool = False):
+    async def declare(self,
+                      key: str,
+                      *,
+                      value: Union[BaseMessage, dict, list, str, int, float, bool, bytes, None] = NOTSET,
+                      persist: bool = False):
         await self._ensure_inited()
         # ---
         # base messages can be turned into dicts
@@ -79,37 +83,40 @@ class KVStore:
             value = value.dict()
         # ---
         queue_exists: bool = await self.exists(key)
+        if queue_exists:
+            return
+        # create remote queue
         cxt: DTPSContext
-        if not queue_exists:
-            # create remote queue
-            cxt = await self._data.navigate(key).queue_create(
-                app_data={
-                    "kvstore.persist": persist,
-                    "kvstore.initial": value,
-                },
-            )
-            # TODO: DTSW-5915: Given that the metadata does not reach the queue creation, we need to set the value
-            # TODO: to be removed once DTSW-5915 is resolved
-            await cxt.publish(RawData.json_from_native_object(value))
-        else:
-            cxt = self._data.navigate(key)
-            # publish to queue
-            await cxt.publish(RawData.json_from_native_object(value))
+        # queue metadata
+        app_data: Dict[str, JSONSerializable] = {
+            "kvstore.persist": persist,
+            "kvstore.initial": value,
+        }
+        # create remote queue
+        await self._data.navigate(key).queue_create(app_data=app_data)
 
-    async def on_update(self, key: str, cb: Callable[[Any], Coroutine[Any, Any, None]],
-                        create_if_missing: bool = False, initial_value: Any = NOTSET):
+    async def set(self, key: str, value: Union[BaseMessage, dict, list, str, int, float, bool, bytes, None]):
         await self._ensure_inited()
         # ---
-        if create_if_missing and initial_value is NOTSET:
-            raise ValueError("If create_if_missing is True, initial_value must be provided")
-        # check if the key exists
+        # base messages can be turned into dicts
+        if isinstance(value, BaseMessage):
+            value = value.dict()
+        # ---
         queue_exists: bool = await self.exists(key)
         if not queue_exists:
-            if not create_if_missing:
-                msg = f"Key '{key}' not found. Use create_if_missing=True to create it"
-                raise KeyError(msg)
-            # create remote queue
-            await self.set(key, initial_value)
+            raise KeyError(f"Key '{key}' not found. Use KVStore.declare() to create it first.")
+        cxt: DTPSContext = self._data.navigate(key)
+        # publish to queue
+        await cxt.publish(RawData.json_from_native_object(value))
+
+    async def subscribe(self, key: str, cb: Callable[[Any], Coroutine[Any, Any, None]]):
+        await self._ensure_inited()
+        # ---
+        # make sure the key exists
+        queue_exists: bool = await self.exists(key)
+        if not queue_exists:
+            msg = f"Key '{key}' not found. Use KVStore.set() to create it first."
+            raise KeyError(msg)
         # subscribe to the queue
         cxt = self._data.navigate(key)
         await cxt.subscribe(cb)
