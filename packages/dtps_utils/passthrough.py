@@ -53,16 +53,14 @@ class DTPSPassthrough:
     async def set_source(self, cxt: Optional[DTPSContext], path: List[str]):
         await self._clear_subscribers()
         self._src = cxt
-        self._src_path = path
-        self._current_src = await self._cxt_descriptor("src", cxt, path)
+        self._current_src = await self._cxt_descriptor("src", cxt, path + self._src_path)
         await self._src_q.publish(self._msg_to_rawdata(self._current_src))
         await self.astart()
 
     async def set_destination(self, cxt: Optional[DTPSContext], path: List[str]):
         await self._clear_publishers()
         self._dst = cxt
-        self._dst_path = path
-        self._current_dst = await self._cxt_descriptor("dst", cxt, path)
+        self._current_dst = await self._cxt_descriptor("dst", cxt, path + self._dst_path)
         await self._dst_q.publish(self._msg_to_rawdata(self._current_dst))
         await self.astart()
 
@@ -185,7 +183,7 @@ class DTPSPassthrough:
             logger.info("No destination to publish to. Remaining idle.")
             return
         # create publishers if needed
-        dst1: DTPSContext = self._dst.navigate(*self._dst_path)
+        dst1: DTPSContext = self._dst.navigate(self._current_dst.path)
         if self._publishers is None:
             # create continuous publishers
             self._publishers = {
@@ -193,7 +191,7 @@ class DTPSPassthrough:
             }
 
         # create subscribers if needed
-        src1: DTPSContext = self._src.navigate(*self._src_path)
+        src1: DTPSContext = self._src.navigate(self._current_src.path)
         if self._subscribers is None:
             self._subscribers = {}
             for p in self._subpaths:
