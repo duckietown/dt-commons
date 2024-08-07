@@ -8,7 +8,7 @@ To use the DTPS tests, follow the steps below:
 4. Run the following command to execute the tests:
 
     ```
-    dts devel build --pull
+    dts devel build -H YOUR_ROBOT_NAME --pull
     dts devel run -H YOUR_ROBOT_NAME -L test-rpc-call-dtps -- -v /data/ramdisk/dtps:/dtps -e DT_SUPERUSER=1 --privileged
     ```
 
