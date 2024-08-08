@@ -274,6 +274,7 @@ class Node(DTProcess):
         self.on_shutdown()
 
     def on_shutdown(self):
-        # this function does not do anything, it is called when the node shuts down.
-        # It can be redefined by the user in the final node class.
+        """
+        This function is called when the node shuts down.
+        """
         pass
