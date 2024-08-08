@@ -12,8 +12,8 @@ dt-launchfile-init
 # NOTE: Use the variable DT_PROJECT_PATH to know the absolute path to your code
 # NOTE: Use `dt-exec COMMAND` to run the main process (blocking process)
 
-# launching app
-dt-exec python3 packages/dtps-tests/rpc_call/caller.py & python3 packages/dtps-tests/rpc_call/listener.py &
+# launching app, passing the arguments to the python script
+dt-exec python3 packages/dtps-tests/rpc_call/caller.py $1 & python3 packages/dtps-tests/rpc_call/listener.py $1 &
 
 
 # ----------------------------------------------------------------------------
