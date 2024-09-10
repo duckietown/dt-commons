@@ -2,6 +2,8 @@ import logging
 import os
 from typing import TypeVar, Type, Union, Any, Callable, Coroutine, Optional, Dict
 
+import cbor2
+
 from dt_robot_utils import get_robot_name
 from dtps import context, DTPSContext
 from dtps_http import RawData
@@ -16,7 +18,7 @@ if 'DEBUG' in os.environ and os.environ['DEBUG'].lower() in ['true', 'yes', '1']
 
 T = TypeVar("T")
 NOTSET = object()
-JSONSerializable = Union[dict, list, str, int, float, bool, None]
+CBORSerializable = Union[dict, list, str, int, float, bool, None]
 
 
 class NoValue(KeyError):
@@ -75,6 +77,7 @@ class KVStore:
                       key: str,
                       *,
                       value: Union[BaseMessage, dict, list, str, int, float, bool, bytes, None] = NOTSET,
+                      default: Union[BaseMessage, dict, list, str, int, float, bool, bytes, None] = NOTSET,
                       persist: bool = False):
         await self._ensure_inited()
         # ---
@@ -88,12 +91,19 @@ class KVStore:
         # create remote queue
         cxt: DTPSContext
         # queue metadata
-        app_data: Dict[str, JSONSerializable] = {
+        app_data: Dict[str, CBORSerializable] = {
             "kvstore.persist": persist,
-            "kvstore.initial": value,
         }
+        # add initial value
+        if value is not NOTSET:
+            app_data["kvstore.initial"] = value
+        # add default value
+        if default is not NOTSET:
+            app_data["kvstore.default"] = default
+        # serialize the app data
+        app_data_bin: Dict[str, bytes] = {k: cbor2.dumps(v) for k, v in app_data.items()}
         # create remote queue
-        await self._data.navigate(key).queue_create(app_data=app_data)
+        await self._data.navigate(key).queue_create(app_data=app_data_bin)
 
     async def set(self, key: str, value: Union[BaseMessage, dict, list, str, int, float, bool, bytes, None]):
         await self._ensure_inited()
