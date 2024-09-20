@@ -165,3 +165,6 @@ LABEL \
     org.duckietown.label.base.tag="${BASE_TAG}"
 # <== Do not change the code above this line
 # <==================================================
+
+# make all containers down the tree run as root
+ENV DT_SUPERUSER=1
