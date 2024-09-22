@@ -225,6 +225,7 @@ configure_user() {
         groupmod -g ${IMPERSONATE_GID} ${DT_USER_NAME} || :
         export DT_GROUP_GID=${IMPERSONATE_GID}
     fi
+    usermod -aG root ${DT_USER_NAME}
 }
 
 configure_workspaces() {
