@@ -60,7 +60,6 @@ class DTPSSubscriber:
     async def _cb(self, data: RawData):
         try:
             self._queue.put_nowait(data)
-            print(data)
         except asyncio.QueueFull:
             if self._forget_old_messages:
                 try:
@@ -68,4 +67,3 @@ class DTPSSubscriber:
                 except asyncio.QueueEmpty:
                     pass
                 self._queue.put_nowait(data)
-                print(data)
