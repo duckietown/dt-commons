@@ -195,21 +195,26 @@ class DTPSPassthrough:
         if self._subscribers is None:
             self._subscribers = {}
             for p in self._subpaths:
-                async def _republish(rd: RawData):
-                    # avoid race condition with reconnection
-                    if self._subscribers is None:
-                        return
-                    if self._publishers is None:
-                        return
-                    # ---
-                    rd_transformed: RawData = rd
-                    if self._transformations and p in self._transformations:
-                        rd_transformed = self._transformations[p](rd)
-                        if rd_transformed is None:
-                            raise RuntimeError(f"Transformation function for path '{p}' returned 'None'")
-                    await self._publishers[p].publish(rd_transformed)
 
-                self._subscribers[p] = (await src1.navigate(p).subscribe(_republish))
+                # NOTE: use a factory method to avoid late binding issues with the loop variable 'p'
+                def make_publisher(subpath: str):
+                    async def _republish(rd: RawData):
+                        # avoid race condition with reconnection
+                        if self._subscribers is None:
+                            return
+                        if self._publishers is None:
+                            return
+                        # ---
+                        rd_transformed: RawData = rd
+                        if self._transformations and subpath in self._transformations:
+                            rd_transformed = self._transformations[subpath](rd)
+                            if rd_transformed is None:
+                                raise RuntimeError(f"Transformation function for path '{subpath}' returned 'None'")
+                        await self._publishers[subpath].publish(rd_transformed)
+
+                    return _republish
+
+                self._subscribers[p] = (await src1.navigate(p).subscribe(make_publisher(p)))
 
         base: str = "/".join(src1.get_path_components())
         logger.info("Passthrough started on the following paths:" +
