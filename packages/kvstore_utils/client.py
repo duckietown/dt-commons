@@ -119,7 +119,7 @@ class KVStore:
         # publish to queue
         await cxt.publish(RawData.json_from_native_object(value))
 
-    async def subscribe(self, key: str, cb: Callable[[Any], Coroutine[Any, Any, None]]):
+    async def subscribe(self, key: str, cb: Callable[[RawData], Coroutine[Any, Any, None]]):
         await self._ensure_inited()
         # ---
         # make sure the key exists
