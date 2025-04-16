@@ -10,6 +10,7 @@ class DeviceHardwareBrand(IntEnum):
     RASPBERRY_PI = 1
     JETSON_NANO = 2
     RASPBERRY_PI_64 = 3
+    JETSON_ORIN_NANO = 4
     VIRTUAL = 20
 
 
@@ -23,3 +24,6 @@ class DeviceHardwareModel(IntEnum):
     # Jetson Nano Family
     JETSON_NANO = 11
     JETSON_NANO_2GB = 12
+    # Jetson Orin Nano Family
+    JETSON_ORIN_NANO_4GB = 21
+    JETSON_ORIN_NANO_8GB = 22
