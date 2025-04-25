@@ -6,6 +6,7 @@ class RobotHardware(IntEnum):
     RASPBERRY_PI = 1
     RASPBERRY_PI_64 = 2
     JETSON_NANO = 3
+    JETSON_ORIN_NANO = 4
     VIRTUAL = 90
 
     @property
@@ -19,6 +20,7 @@ class RobotHardware(IntEnum):
             'raspberry_pi': RobotHardware.RASPBERRY_PI,
             'raspberry_pi_64': RobotHardware.RASPBERRY_PI_64,
             'jetson_nano': RobotHardware.JETSON_NANO,
+            'jetson_orin_nano': RobotHardware.JETSON_ORIN_NANO,
             'virtual': RobotHardware.VIRTUAL
         }
         if rhardware in _from_string:
