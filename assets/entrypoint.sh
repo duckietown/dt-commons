@@ -164,7 +164,7 @@ configure_vehicle() {
 
 configure_hardware() {
     # NVidia Jetson-based robots
-    if [[ "${ROBOT_HARDWARE-}" == "jetson_nano" ]]; then
+    if [[ "${ROBOT_HARDWARE-}" == "jetson_nano" || "${ROBOT_HARDWARE-}" == "jetson_orin_nano" ]]; then
         CUDA_VERSION=10.2
 
         # configure nvidia drivers for Jetson Nano boards
