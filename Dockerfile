@@ -52,6 +52,16 @@ ENV DT_USER_NAME="duckie" \
     DT_GROUP_GID=2222 \
     DT_USER_HOME="/home/duckie"
 
+# Fix obsolete ROS apt keys
+RUN rm /etc/apt/sources.list.d/ros.list \
+    && apt-key del "C1CF 6E31 E6BA DE88 68B1  72B4 F42E D6FB AB17 C654" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+    && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add - \
+    && apt-get update \
+    &&  rm -rf /var/lib/apt/lists/*
+
 # install apt dependencies
 COPY ./dependencies-apt.txt "${REPO_PATH}/"
 RUN dt-apt-install "${REPO_PATH}/dependencies-apt.txt"
