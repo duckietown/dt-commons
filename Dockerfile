@@ -58,8 +58,11 @@ RUN rm /etc/apt/sources.list.d/ros.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
+        lsb-release \
+        gnupg2 \
     && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add - \
     && apt-get update \
+    && sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
     &&  rm -rf /var/lib/apt/lists/*
 
 # install apt dependencies
