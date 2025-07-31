@@ -25,7 +25,7 @@ coloredlogs<=15.0.1
 
 # -- Duckietown --
 
-git+https://github.com/duckietown/lib-dtps-http.git@v1.4.3#egg=dtps-http
+dtps-http==1.4.4
 
 # messages
 duckietown-messages<1
