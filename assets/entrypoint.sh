@@ -293,8 +293,8 @@ configure_libraries() {
                             export PYTHONPATH="${lib}/src:${PYTHONPATH}"
                             info "  < Loaded library: ${LIB_NAME} (exposed to PYTHONPATH)"
                         else
-                            # we don't recognize the library, install it using pip instead
-                            info "  > Installing ${lib} using pip"
+                            # we don't recognize the library, install it using uv instead
+                            info "  > Installing ${lib} using uv"
                             # copy the library to a temporary directory
                             LIB_NAME=$(basename ${lib})
                             TMP_LIB_DIR=$(mktemp -d)
@@ -303,7 +303,7 @@ configure_libraries() {
                             export POETRY_DYNAMIC_VERSIONING_BYPASS="0.0.0"
                             export POETRY_DYNAMIC_VERSIONING_COMMANDS=""
                             # install the library
-                            python3 -m pip install --no-dependencies --editable "${TMP_LIB_DIR}/${LIB_NAME}" > /dev/null
+                            uv pip install --no-dependencies --editable "${TMP_LIB_DIR}/${LIB_NAME}" > /dev/null
                             info "  < Loaded library: ${LIB_NAME}\t(installed from temporary directory: ${TMP_LIB_DIR})"
                         fi
                         # ---
