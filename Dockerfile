@@ -84,6 +84,7 @@ RUN dt-apt-install ${PROJECT_PATH}/dependencies-apt.txt
 # install python3 dependencies
 ARG PIP_INDEX_URL="https://pypi.org/simple"
 ENV PIP_INDEX_URL=${PIP_INDEX_URL}
+ENV GIT_LFS_SKIP_SMUDGE=1
 COPY ./dependencies-py3.* "${PROJECT_PATH}/"
 RUN dt-pip3-install "${PROJECT_PATH}/dependencies-py3.*"
 
