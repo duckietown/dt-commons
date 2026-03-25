@@ -303,7 +303,7 @@ configure_libraries() {
                             export POETRY_DYNAMIC_VERSIONING_BYPASS="0.0.0"
                             export POETRY_DYNAMIC_VERSIONING_COMMANDS=""
                             # install the library
-                            uv pip install --no-dependencies --editable "${TMP_LIB_DIR}/${LIB_NAME}" > /dev/null
+                            uv pip install --no-deps --editable "${TMP_LIB_DIR}/${LIB_NAME}" > /dev/null
                             info "  < Loaded library: ${LIB_NAME}\t(installed from temporary directory: ${TMP_LIB_DIR})"
                         fi
                         # ---
