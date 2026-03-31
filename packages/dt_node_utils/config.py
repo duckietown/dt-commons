@@ -127,7 +127,7 @@ class DataContainer:
     def _update_dataclass(base: Any, new: Any):
         if not dataclasses.is_dataclass(base):
             raise ValueError(f"Expected a dataclass, got {type(base)}")
-        if not dataclasses.is_dataclass(base):
+        if not dataclasses.is_dataclass(new):
             raise ValueError(f"Expected a dataclass, got {type(new)}")
         if type(base) is not type(new):
             raise ValueError(f"Expected a dataclass of type {type(base)}, got {type(new)}")

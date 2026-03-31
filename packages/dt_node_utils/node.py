@@ -255,12 +255,12 @@ class Node(DTProcess):
         old_state: bool = self.active
 
         if new_state != old_state:
+            self._active = new_state
+
             if new_state:
                 self.on_switch_on()
             else:
                 self.on_switch_off()
-
-            self._active = new_state
 
             msg = "Node switched from [%s] to [%s]" % ("on" if old_state else "off", "on" if new_state else "off")
             self.loginfo(msg)

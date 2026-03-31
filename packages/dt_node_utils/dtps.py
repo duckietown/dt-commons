@@ -16,10 +16,9 @@ def default_context_env(context_name: str, node_name: str, pure: bool = False,
         f"{DTPS_BASE}_{context_name.upper()}_{i}": url for i, url in enumerate(default_urls)
     }
     env: dict = {
-        **urls
+        **(os.environ if not pure else {}),
+        **urls,
     }
-    if not pure:
-        env.update(os.environ)
     return env
 
 
