@@ -40,6 +40,12 @@ class DTProcess(object):
             self._is_debug = True
         # install colored logs on our own logger
         install_colored_logs(logger=self.logger, level=self.logger.level)
+        # coloredlogs installs handlers with a fixed level — sync them to the logger's level
+        # so that DEBUG mode (set above or by a subclass) is not silently filtered by handlers
+        if self._is_debug:
+            for handler in logging.root.handlers + self.logger.handlers:
+                handler.setLevel(logging.DEBUG)
+            logging.root.setLevel(logging.DEBUG)
         # register signal handlers
         if self._catch_signals:
             signal.signal(signal.SIGINT, self._on_sigint)
