@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 from typing import Optional, List, Dict, Callable
 
@@ -13,6 +14,12 @@ logger.setLevel(logging.INFO)
 SubPath = str
 
 
+@dataclasses.dataclass(frozen=True)
+class PassthroughPublisherTransport:
+    shm_path: Optional[str] = None
+    shm_only: bool = False
+
+
 class DTPSPassthrough:
     __counter: int = 0
 
@@ -24,7 +31,8 @@ class DTPSPassthrough:
             subpaths: List[SubPath],
             src_path: List[str] = None,
             dst_path: List[str] = None,
-            transformations: Optional[Dict[SubPath, Callable[[RawData], RawData]]] = None
+            transformations: Optional[Dict[SubPath, Callable[[RawData], RawData]]] = None,
+            publish_transports: Optional[Dict[SubPath, PassthroughPublisherTransport]] = None,
             ):
         self._base: DTPSContext = base
         self._src: Optional[DTPSContext] = src
@@ -32,6 +40,7 @@ class DTPSPassthrough:
         self._subpaths: List[SubPath] = subpaths
         # transformations to apply to the data before republishing
         self._transformations: Optional[Dict[SubPath, Callable[[RawData], RawData]]] = transformations
+        self._publish_transports = dict(publish_transports or {})
         # the descriptors of the current source and destination
         self._current_src: Optional[DTPSContextMsg] = None
         self._current_dst: Optional[DTPSContextMsg] = None
@@ -210,7 +219,12 @@ class DTPSPassthrough:
                             rd_transformed = self._transformations[subpath](rd)
                             if rd_transformed is None:
                                 raise RuntimeError(f"Transformation function for path '{subpath}' returned 'None'")
-                        await self._publishers[subpath].publish(rd_transformed)
+                        publisher = self._publishers[subpath]
+                        transport = self._publish_transports.get(subpath)
+                        if transport is None:
+                            await publisher.publish(rd_transformed)
+                        else:
+                            await publisher.publish(rd_transformed, shm_path=transport.shm_path, shm_only=transport.shm_only)
 
                     return _republish
 
