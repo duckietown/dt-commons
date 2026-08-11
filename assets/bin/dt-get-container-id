@@ -18,8 +18,12 @@ if __name__ == '__main__':
     #
     #       /docker/9cc113ade4799f6ff6725fc4bb420bb616b9e5843fbe0dfbb26993806e012c3a
     #
-    with open(CPUSET_FPATH, "rt") as fin:
-        cpuset = fin.read().strip()
+    try:
+        with open(CPUSET_FPATH, "rt") as fin:
+            cpuset = fin.read().strip()
+    except FileNotFoundError:
+        # cgroup v2 hosts (for example Ubuntu 22.04) do not expose this file.
+        cpuset = ""
     container_id = os.path.basename(cpuset)
     if len(container_id) >= 12:
         end(container_id)
