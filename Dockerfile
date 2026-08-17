@@ -53,7 +53,7 @@ ENV DT_USER_NAME="duckie" \
     DT_USER_HOME="/home/duckie"
 
 # Fix obsolete ROS apt keys
-RUN rm /etc/apt/sources.list.d/ros.list \
+RUN rm -f /etc/apt/sources.list.d/ros.list \
     && apt-key del "C1CF 6E31 E6BA DE88 68B1  72B4 F42E D6FB AB17 C654" \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
